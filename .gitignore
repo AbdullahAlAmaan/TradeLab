@@ -134,7 +134,17 @@ frontend/.env
 *password*
 *credential*
 
+# Supabase specific
+*supabase*
+*postgresql*
+
 # Test files
 test_*.py
 *_test.py
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
 
