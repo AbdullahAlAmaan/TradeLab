@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  Globe
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,6 +23,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Portfolios', href: '/portfolios', icon: BarChart3 },
+    { name: 'Market Data', href: '/market-data', icon: Globe },
     { name: 'Backtest', href: '/backtest', icon: TrendingUp },
     { name: 'Risk Analysis', href: '/risk', icon: Shield },
     { name: 'Paper Trading', href: '/trading', icon: Wallet },

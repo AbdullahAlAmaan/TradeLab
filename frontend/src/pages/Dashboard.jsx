@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { portfolioAPI, backtestAPI } from '../lib/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import IntegrationTest from '../components/IntegrationTest'
 
 const Dashboard = () => {
   const [portfolios, setPortfolios] = useState([])
@@ -348,6 +349,11 @@ const Dashboard = () => {
             </div>
           </Link>
         </div>
+      </div>
+
+      {/* Integration Test Section */}
+      <div className="mt-8">
+        <IntegrationTest />
       </div>
     </div>
   )

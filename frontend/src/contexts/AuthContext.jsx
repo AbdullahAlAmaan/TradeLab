@@ -53,11 +53,17 @@ export const AuthProvider = ({ children }) => {
       email,
       password,
     })
+    
+    if (data.session) {
+      localStorage.setItem('supabase.auth.token', data.session.access_token)
+    }
+    
     return { data, error }
   }
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
+    localStorage.removeItem('supabase.auth.token')
     return { error }
   }
 

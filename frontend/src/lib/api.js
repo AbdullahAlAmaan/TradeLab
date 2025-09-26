@@ -13,8 +13,12 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('supabase.auth.token')
+  console.log('API Request - Token available:', !!token)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    console.log('API Request - Authorization header set')
+  } else {
+    console.log('API Request - No token found in localStorage')
   }
   return config
 })
@@ -58,9 +62,9 @@ export const riskAPI = {
 }
 
 export const tradeAPI = {
-  executeTrade: (data) => api.post('/trade/paper', data),
-  getTrades: () => api.get('/trade/trades'),
-  getTrade: (id) => api.get(`/trade/trades/${id}`),
+  placeOrder: (data) => api.post('/trade/paper', data),
+  getOrders: () => api.get('/trade/trades'),
+  getOrder: (id) => api.get(`/trade/trades/${id}`),
   getPositions: () => api.get('/trade/positions'),
 }
 
