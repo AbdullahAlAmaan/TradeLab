@@ -1,0 +1,67 @@
+import axios from 'axios'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+// Create axios instance
+const api = axios.create({
+  baseURL: `${API_BASE_URL}/api/v1`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('supabase.auth.token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// API endpoints
+export const authAPI = {
+  getCurrentUser: () => api.get('/auth/me'),
+  verifyToken: () => api.post('/auth/verify'),
+}
+
+export const portfolioAPI = {
+  getPortfolios: () => api.get('/assets/portfolios'),
+  createPortfolio: (data) => api.post('/assets/portfolios', data),
+  updatePortfolio: (id, data) => api.put(`/assets/portfolios/${id}`, data),
+  deletePortfolio: (id) => api.delete(`/assets/portfolios/${id}`),
+  getPortfolio: (id) => api.get(`/assets/portfolios/${id}`),
+}
+
+export const assetAPI = {
+  getAssets: (portfolioId) => api.get(`/assets/portfolios/${portfolioId}/assets`),
+  createAsset: (data) => api.post('/assets/assets', data),
+  updateAsset: (id, data) => api.put(`/assets/assets/${id}`, data),
+  deleteAsset: (id) => api.delete(`/assets/assets/${id}`),
+}
+
+export const dataAPI = {
+  fetchData: (data) => api.post('/data/fetch', data),
+  getPriceData: (symbol, assetType, days = 30) => 
+    api.get(`/data/prices/${symbol}?asset_type=${assetType}&days=${days}`),
+}
+
+export const backtestAPI = {
+  runBacktest: (data) => api.post('/backtest/run', data),
+  getResults: () => api.get('/backtest/results'),
+  getResult: (id) => api.get(`/backtest/results/${id}`),
+}
+
+export const riskAPI = {
+  calculateRisk: (data) => api.post('/risk/calculate', data),
+  getRiskMetrics: (portfolioId) => api.get(`/risk/metrics/${portfolioId}`),
+}
+
+export const tradeAPI = {
+  executeTrade: (data) => api.post('/trade/paper', data),
+  getTrades: () => api.get('/trade/trades'),
+  getTrade: (id) => api.get(`/trade/trades/${id}`),
+  getPositions: () => api.get('/trade/positions'),
+}
+
+export default api
