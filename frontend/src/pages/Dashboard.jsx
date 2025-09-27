@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Plus, 
@@ -14,33 +14,52 @@ import {
   Zap
 } from 'lucide-react'
 import { portfolioAPI, backtestAPI } from '../lib/api'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { useAuth } from '../contexts/AuthContext'
+// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import IntegrationTest from '../components/IntegrationTest'
 
 const Dashboard = () => {
+  const { user } = useAuth()
   const [portfolios, setPortfolios] = useState([])
   const [recentBacktests, setRecentBacktests] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
+  const loadDashboardData = useCallback(async () => {
+    if (!user) {
+      console.log('User not authenticated, skipping data load')
+      setLoading(false)
+      return
+    }
 
-  const loadDashboardData = async () => {
     try {
+      console.log('Loading dashboard data for user:', user.email)
       const [portfoliosRes, backtestsRes] = await Promise.all([
         portfolioAPI.getPortfolios(),
         backtestAPI.getResults()
       ])
       
-      setPortfolios(portfoliosRes.data)
-      setRecentBacktests(backtestsRes.data.slice(0, 5))
+      console.log('Portfolios response:', portfoliosRes)
+      console.log('Backtests response:', backtestsRes)
+      
+      setPortfolios(portfoliosRes.data || [])
+      setRecentBacktests((backtestsRes.data || []).slice(0, 5))
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      // Set empty arrays on error to prevent blank page
+      setPortfolios([])
+      setRecentBacktests([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    // Reset state when user changes
+    if (user?.id) {
+      setLoading(true)
+    }
+    loadDashboardData()
+  }, [user?.id]) // Only depend on user.id, not loadDashboardData
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -50,6 +69,9 @@ const Dashboard = () => {
   }
 
   const formatPercentage = (value) => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '0.00%'
+    }
     return `${(value * 100).toFixed(2)}%`
   }
 
@@ -63,6 +85,42 @@ const Dashboard = () => {
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Fallback in case of any rendering issues
+  console.log('Dashboard rendering with portfolios:', portfolios.length, 'backtests:', recentBacktests.length)
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Welcome to TradeLab
+          </h1>
+          <p className="text-gray-600 mb-8 text-lg">Please log in to access your dashboard</p>
+          <a
+            href="/login"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center"
+          >
+            <Activity className="h-5 w-5 mr-2" />
+            Login to Dashboard
+          </a>
         </div>
       </div>
     )
@@ -118,8 +176,8 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Best Return</p>
               <p className="text-3xl font-bold text-gray-900">
-                {recentBacktests.length > 0 
-                  ? formatPercentage(Math.max(...recentBacktests.map(bt => bt.total_return)))
+                {recentBacktests.length > 0 && recentBacktests.every(bt => bt.total_return !== undefined)
+                  ? formatPercentage(Math.max(...recentBacktests.map(bt => bt.total_return || 0)))
                   : '0.00%'
                 }
               </p>
@@ -156,7 +214,7 @@ const Dashboard = () => {
               <p className="text-sm font-medium text-gray-500 mb-1">Avg Sharpe Ratio</p>
               <p className="text-3xl font-bold text-gray-900">
                 {recentBacktests.length > 0 
-                  ? (recentBacktests.reduce((sum, bt) => sum + (bt.sharpe_ratio || 0), 0) / recentBacktests.length).toFixed(2)
+                  ? (recentBacktests.reduce((sum, bt) => sum + (typeof bt.sharpe_ratio === 'number' ? bt.sharpe_ratio : 0), 0) / recentBacktests.length).toFixed(2)
                   : '0.00'
                 }
               </p>
@@ -180,13 +238,13 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold text-gray-900">Recent Portfolios</h2>
               <p className="text-gray-500 text-sm">Manage your investment portfolios</p>
             </div>
-            <Link
-              to="/portfolios"
+            <a
+              href="/portfolios"
               className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-xl flex items-center hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Portfolio
-            </Link>
+            </a>
           </div>
           
           {portfolios.length === 0 ? (
@@ -196,13 +254,13 @@ const Dashboard = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No portfolios yet</h3>
               <p className="text-gray-500 mb-6">Start building your investment strategy by creating your first portfolio</p>
-              <Link
-                to="/portfolios"
+              <a
+                href="/portfolios"
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Create your first portfolio
-              </Link>
+              </a>
             </div>
           ) : (
             <div className="space-y-3">
@@ -217,12 +275,12 @@ const Dashboard = () => {
                       <p className="text-sm text-gray-500">{portfolio.description || 'No description'}</p>
                     </div>
                   </div>
-                  <Link
-                    to={`/portfolios/${portfolio.id}`}
+                  <a
+                    href={`/portfolios/${portfolio.id}`}
                     className="text-gray-400 hover:text-blue-600 transition-colors group-hover:scale-110 transform duration-300"
                   >
                     <ArrowUpRight className="h-5 w-5" />
-                  </Link>
+                  </a>
                 </div>
               ))}
             </div>
@@ -236,13 +294,13 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold text-gray-900">Recent Backtests</h2>
               <p className="text-gray-500 text-sm">Test your trading strategies</p>
             </div>
-            <Link
-              to="/backtest"
+            <a
+              href="/backtest"
               className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl flex items-center hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-4 w-4 mr-2" />
               Run Backtest
-            </Link>
+            </a>
           </div>
           
           {recentBacktests.length === 0 ? (
@@ -252,13 +310,13 @@ const Dashboard = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No backtests yet</h3>
               <p className="text-gray-500 mb-6">Test your trading strategies with historical data to optimize performance</p>
-              <Link
-                to="/backtest"
+              <a
+                href="/backtest"
                 className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center"
               >
                 <TrendingUp className="h-5 w-5 mr-2" />
                 Run your first backtest
-              </Link>
+              </a>
             </div>
           ) : (
             <div className="space-y-3">
@@ -281,10 +339,10 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className={`font-bold text-lg ${backtest.total_return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercentage(backtest.total_return)}
+                      {formatPercentage(backtest.total_return || 0)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Sharpe: {backtest.sharpe_ratio?.toFixed(2) || 'N/A'}
+                      Sharpe: {typeof backtest.sharpe_ratio === 'number' ? backtest.sharpe_ratio.toFixed(2) : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -301,8 +359,8 @@ const Dashboard = () => {
           <p className="text-gray-600">Get started with these essential features</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link
-            to="/portfolios"
+          <a
+            href="/portfolios"
             className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1"
           >
             <div className="flex items-center mb-4">
@@ -315,10 +373,10 @@ const Dashboard = () => {
             <div className="mt-4 flex items-center text-blue-600 text-sm font-medium group-hover:text-blue-700">
               Get started <ArrowUpRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </a>
 
-          <Link
-            to="/backtest"
+          <a
+            href="/backtest"
             className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1"
           >
             <div className="flex items-center mb-4">
@@ -331,10 +389,10 @@ const Dashboard = () => {
             <div className="mt-4 flex items-center text-green-600 text-sm font-medium group-hover:text-green-700">
               Start testing <ArrowUpRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </a>
 
-          <Link
-            to="/trading"
+          <a
+            href="/trading"
             className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1"
           >
             <div className="flex items-center mb-4">
@@ -347,7 +405,7 @@ const Dashboard = () => {
             <div className="mt-4 flex items-center text-purple-600 text-sm font-medium group-hover:text-purple-700">
               Start trading <ArrowUpRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </a>
         </div>
       </div>
 

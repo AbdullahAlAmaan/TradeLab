@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   Home, 
@@ -58,9 +58,9 @@ const Layout = ({ children }) => {
             {navigation.map((item) => {
               const isActive = location.pathname === item.href
               return (
-                <Link
+                <a
                   key={item.name}
-                  to={item.href}
+                  href={item.href}
                   className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
@@ -70,7 +70,7 @@ const Layout = ({ children }) => {
                 >
                   <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'}`} />
                   {item.name}
-                </Link>
+                </a>
               )
             })}
           </nav>
@@ -114,9 +114,9 @@ const Layout = ({ children }) => {
             {navigation.map((item) => {
               const isActive = location.pathname === item.href
               return (
-                <Link
+                <a
                   key={item.name}
-                  to={item.href}
+                  href={item.href}
                   className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
@@ -125,7 +125,7 @@ const Layout = ({ children }) => {
                 >
                   <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'}`} />
                   {item.name}
-                </Link>
+                </a>
               )
             })}
           </nav>

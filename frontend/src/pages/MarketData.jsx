@@ -21,10 +21,18 @@ const MarketData = () => {
   const [selectedAsset, setSelectedAsset] = useState(null)
   const [priceData, setPriceData] = useState(null)
   const [recentSearches, setRecentSearches] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [filteredSymbols, setFilteredSymbols] = useState([])
 
   // Popular symbols for quick access
-  const popularStocks = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA', 'NFLX']
-  const popularCrypto = ['BTC', 'ETH', 'ADA', 'SOL', 'DOT', 'MATIC', 'AVAX', 'LINK']
+  const popularStocks = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA', 'NFLX', 'AMD', 'INTC', 'CRM', 'ORCL', 'ADBE', 'PYPL', 'NKE', 'DIS', 'WMT', 'JPM', 'V', 'MA']
+  const popularCrypto = ['BTC', 'ETH', 'ADA', 'SOL', 'DOT', 'MATIC', 'AVAX', 'LINK', 'UNI', 'LTC', 'BCH', 'XRP', 'DOGE', 'SHIB', 'ATOM', 'FTM', 'ALGO', 'VET', 'ICP', 'FIL']
+  
+  // All symbols for search suggestions
+  const allSymbols = {
+    stock: popularStocks,
+    crypto: popularCrypto
+  }
 
   useEffect(() => {
     // Load recent searches from localStorage
@@ -39,6 +47,8 @@ const MarketData = () => {
     
     setLoading(true)
     setError(null)
+    setShowSuggestions(false)
+    setFilteredSymbols([])
     
     try {
       const response = await dataAPI.fetchData({
@@ -82,6 +92,40 @@ const MarketData = () => {
     setSearchResults([])
     setSelectedAsset(null)
     setPriceData(null)
+    setShowSuggestions(false)
+  }
+
+  const handleSymbolChange = (value) => {
+    setSearchSymbol(value.toUpperCase())
+    
+    if (value.length > 0) {
+      // Filter symbols based on current asset type and search input
+      const symbols = allSymbols[assetType] || []
+      const filtered = symbols.filter(symbol => 
+        symbol.toLowerCase().includes(value.toLowerCase())
+      )
+      setFilteredSymbols(filtered)
+      setShowSuggestions(true)
+    } else {
+      setShowSuggestions(false)
+      setFilteredSymbols([])
+    }
+  }
+
+  const handleAssetTypeChange = (type) => {
+    setAssetType(type)
+    setSearchSymbol('')
+    setShowSuggestions(false)
+    setFilteredSymbols([])
+    setSearchResults([])
+    setSelectedAsset(null)
+    setPriceData(null)
+  }
+
+  const selectSuggestion = (symbol) => {
+    setSearchSymbol(symbol)
+    setShowSuggestions(false)
+    setFilteredSymbols([])
   }
 
   const formatPrice = (price) => {
@@ -129,18 +173,36 @@ const MarketData = () => {
                 <input
                   type="text"
                   value={searchSymbol}
-                  onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
+                  onChange={(e) => handleSymbolChange(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchAsset()}
+                  onFocus={() => searchSymbol.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., AAPL, BTC, ETH"
+                  placeholder={`e.g., ${assetType === 'stock' ? 'AAPL, MSFT, TSLA' : 'BTC, ETH, ADA'}`}
                 />
+                
+                {/* Search Suggestions Dropdown */}
+                {showSuggestions && filteredSymbols.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {filteredSymbols.slice(0, 10).map((symbol, index) => (
+                      <div
+                        key={index}
+                        onClick={() => selectSuggestion(symbol)}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-b-0"
+                      >
+                        <span className="font-medium text-gray-900">{symbol}</span>
+                        <span className="text-xs text-gray-500 capitalize">{assetType}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="md:w-48">
               <label className="block text-sm font-medium text-gray-700 mb-2">Asset Type</label>
               <select
                 value={assetType}
-                onChange={(e) => setAssetType(e.target.value)}
+                onChange={(e) => handleAssetTypeChange(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="stock">Stock</option>
@@ -168,33 +230,59 @@ const MarketData = () => {
           {/* Quick Access */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Stocks</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Popular {assetType === 'stock' ? 'Stocks' : 'Cryptocurrencies'}
+              </h3>
               <div className="flex flex-wrap gap-2">
-                {popularStocks.map(symbol => (
+                {(assetType === 'stock' ? popularStocks : popularCrypto).map(symbol => (
                   <button
                     key={symbol}
-                    onClick={() => quickSearch(symbol, 'stock')}
-                    className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                    onClick={() => quickSearch(symbol, assetType)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      assetType === 'stock' 
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
+                        : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                    }`}
                   >
                     {symbol}
                   </button>
                 ))}
               </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Crypto</h3>
-              <div className="flex flex-wrap gap-2">
-                {popularCrypto.map(symbol => (
-                  <button
-                    key={symbol}
-                    onClick={() => quickSearch(symbol, 'crypto')}
-                    className="px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-100 transition-colors"
-                  >
-                    {symbol}
-                  </button>
-                ))}
-              </div>
-            </div>
+            
+            {/* Show both types when no specific type is selected */}
+            {!assetType && (
+              <>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Stocks</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {popularStocks.slice(0, 10).map(symbol => (
+                      <button
+                        key={symbol}
+                        onClick={() => quickSearch(symbol, 'stock')}
+                        className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                      >
+                        {symbol}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Crypto</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {popularCrypto.slice(0, 10).map(symbol => (
+                      <button
+                        key={symbol}
+                        onClick={() => quickSearch(symbol, 'crypto')}
+                        className="px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-100 transition-colors"
+                      >
+                        {symbol}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

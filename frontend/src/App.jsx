@@ -7,6 +7,8 @@ import Loading from './components/Loading'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import DashboardTest from './pages/DashboardTest'
+import DashboardDebug from './pages/DashboardDebug'
 import Portfolios from './pages/Portfolios'
 import Backtest from './pages/Backtest'
 import Risk from './pages/Risk'
@@ -62,16 +64,16 @@ function App() {
               />
               
               {/* Protected routes */}
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                } 
-              />
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
               <Route 
                 path="/portfolios" 
                 element={
