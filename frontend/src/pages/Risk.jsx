@@ -40,11 +40,14 @@ const Risk = () => {
     setLoading(true)
     setError(null)
     try {
+      console.log('Calculating risk metrics for portfolio:', portfolioId)
       const response = await riskAPI.calculateRisk({ portfolio_id: portfolioId })
+      console.log('Risk metrics response:', response.data)
       setRiskMetrics(response.data)
     } catch (error) {
       console.error('Error calculating risk metrics:', error)
-      setError('Failed to calculate risk metrics. Please ensure you have assets in your portfolio and price data is available.')
+      const errorMessage = error.response?.data?.detail || 'Failed to calculate risk metrics. Please ensure you have assets in your portfolio and price data is available.'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -63,15 +66,20 @@ const Risk = () => {
   }
 
   const getRiskLevel = (value, type) => {
+    // Convert string to number if needed
+    const numValue = typeof value === 'string' ? parseFloat(value) : value
+    
+    if (isNaN(numValue)) return { level: 'N/A', color: 'gray' }
+    
     if (type === 'var' || type === 'cvar' || type === 'max_drawdown') {
-      if (value < 0.05) return { level: 'Low', color: 'green' }
-      if (value < 0.15) return { level: 'Medium', color: 'yellow' }
+      if (numValue < 0.05) return { level: 'Low', color: 'green' }
+      if (numValue < 0.15) return { level: 'Medium', color: 'yellow' }
       return { level: 'High', color: 'red' }
     }
     if (type === 'sharpe' || type === 'sortino') {
-      if (value > 1.5) return { level: 'Excellent', color: 'green' }
-      if (value > 1.0) return { level: 'Good', color: 'blue' }
-      if (value > 0.5) return { level: 'Fair', color: 'yellow' }
+      if (numValue > 1.5) return { level: 'Excellent', color: 'green' }
+      if (numValue > 1.0) return { level: 'Good', color: 'blue' }
+      if (numValue > 0.5) return { level: 'Fair', color: 'yellow' }
       return { level: 'Poor', color: 'red' }
     }
     return { level: 'N/A', color: 'gray' }
@@ -114,7 +122,13 @@ const Risk = () => {
           </div>
         </div>
 
-        {!selectedPortfolio ? (
+        {loading ? (
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-12 border border-gray-200/50 shadow-xl text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Calculating Risk Metrics</h3>
+            <p className="text-gray-600">This may take a few moments...</p>
+          </div>
+        ) : !selectedPortfolio ? (
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-12 border border-gray-200/50 shadow-xl text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="h-8 w-8 text-gray-400" />
@@ -178,7 +192,7 @@ const Risk = () => {
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {riskMetrics ? riskMetrics.sharpe_ratio?.toFixed(2) : '--'}
+                  {riskMetrics ? (typeof riskMetrics.sharpe_ratio === 'number' ? riskMetrics.sharpe_ratio.toFixed(2) : parseFloat(riskMetrics.sharpe_ratio || 0).toFixed(2)) : '--'}
                 </div>
                 <div className="text-sm text-gray-600">Sharpe Ratio</div>
               </div>
@@ -212,13 +226,13 @@ const Risk = () => {
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Sortino Ratio</span>
                     <span className="font-semibold text-gray-900">
-                      {riskMetrics ? riskMetrics.sortino_ratio?.toFixed(2) : '--'}
+                      {riskMetrics ? (typeof riskMetrics.sortino_ratio === 'number' ? riskMetrics.sortino_ratio.toFixed(2) : parseFloat(riskMetrics.sortino_ratio || 0).toFixed(2)) : '--'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Beta</span>
                     <span className="font-semibold text-gray-900">
-                      {riskMetrics ? riskMetrics.beta?.toFixed(2) : '--'}
+                      {riskMetrics ? (typeof riskMetrics.beta === 'number' ? riskMetrics.beta.toFixed(2) : parseFloat(riskMetrics.beta || 0).toFixed(2)) : '--'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">

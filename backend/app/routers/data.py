@@ -14,12 +14,23 @@ import pandas as pd
 
 router = APIRouter()
 
-# Initialize Binance client
-binance_client = BinanceClient(
-    api_key=settings.binance_api_key,
-    api_secret=settings.binance_secret_key,
-    testnet=False  # Use real Binance API for market data
-)
+# Initialize Binance client lazily to avoid startup timeouts
+binance_client = None
+
+def get_binance_client():
+    global binance_client
+    if binance_client is None:
+        try:
+            binance_client = BinanceClient(
+                api_key=settings.binance_api_key,
+                api_secret=settings.binance_secret_key,
+                testnet=False  # Use real Binance API for market data
+            )
+            print("Binance client initialized successfully")
+        except Exception as e:
+            print(f"Warning: Could not initialize Binance client: {e}")
+            binance_client = None
+    return binance_client
 
 
 @router.post("/fetch")
@@ -209,7 +220,11 @@ async def _fetch_crypto_data(request: DataFetchRequest, db: Session):
         for symbol in symbols_to_try:
             try:
                 print(f"Trying symbol: {symbol}")
-                klines = binance_client.get_historical_klines(
+                client = get_binance_client()
+                if client is None:
+                    raise Exception("Binance client not available")
+                    
+                klines = client.get_historical_klines(
                     symbol=symbol,
                     interval="1d",
                     start_str=start_time,

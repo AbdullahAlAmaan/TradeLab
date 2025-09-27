@@ -6,6 +6,63 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
+  
+  /* Theme system */
+  [data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+  }
+  
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+  }
+  
+  /* Primary color system */
+  [data-primary-color="blue"] {
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+  }
+  
+  [data-primary-color="purple"] {
+    --primary-500: #8b5cf6;
+    --primary-600: #7c3aed;
+    --primary-700: #6d28d9;
+  }
+  
+  [data-primary-color="green"] {
+    --primary-500: #10b981;
+    --primary-600: #059669;
+    --primary-700: #047857;
+  }
+  
+  [data-primary-color="red"] {
+    --primary-500: #ef4444;
+    --primary-600: #dc2626;
+    --primary-700: #b91c1c;
+  }
+  
+  [data-primary-color="yellow"] {
+    --primary-500: #f59e0b;
+    --primary-600: #d97706;
+    --primary-700: #b45309;
+  }
+  
+  /* Sidebar collapse */
+  .sidebar-collapsed .sidebar {
+    width: 4rem;
+  }
+  
+  .sidebar-collapsed .sidebar .sidebar-text {
+    display: none;
+  }
 }
 
 @layer components {

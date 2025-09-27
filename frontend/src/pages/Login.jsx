@@ -19,13 +19,17 @@ const Login = () => {
     setError('')
 
     try {
-      const { error } = await signIn(email, password)
+      console.log('Login: Attempting to sign in...')
+      const { data, error } = await signIn(email, password)
       if (error) {
+        console.error('Login: Sign in failed:', error)
         setError(error.message)
       } else {
+        console.log('Login: Sign in successful, navigating to dashboard')
         navigate('/')
       }
     } catch (err) {
+      console.error('Login: Unexpected error:', err)
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

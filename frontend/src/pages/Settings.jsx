@@ -2,32 +2,30 @@ import React, { useState, useEffect } from 'react'
 import { 
   Settings as SettingsIcon, 
   User, 
-  Key, 
   Bell,
   Shield,
   Palette,
   Save,
   CheckCircle,
   AlertCircle,
-  Eye,
-  EyeOff,
   RefreshCw,
   Info
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 const Settings = () => {
   const { user, signOut } = useAuth()
+  const { theme, updateTheme, toggleMode, setPrimaryColor, toggleSidebar } = useTheme()
   const [activeTab, setActiveTab] = useState('profile')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(null)
   const [error, setError] = useState(null)
-  const [showApiKeys, setShowApiKeys] = useState({})
 
   // Profile settings
   const [profile, setProfile] = useState({
     email: user?.email || '',
-    display_name: '',
+    display_name: user?.user_metadata?.display_name || '',
     timezone: 'UTC',
     currency: 'USD'
   })
@@ -50,24 +48,6 @@ const Settings = () => {
     confirm_orders: true
   })
 
-  // Theme settings
-  const [theme, setTheme] = useState({
-    mode: 'light',
-    primary_color: 'blue',
-    sidebar_collapsed: false
-  })
-
-  // API Keys - loaded from environment or user input
-  const [apiKeys, setApiKeys] = useState({
-    alpaca_api_key: '',
-    alpaca_secret_key: '',
-    binance_api_key: '',
-    binance_secret_key: ''
-  })
-  const [newApiKey, setNewApiKey] = useState({
-    type: 'alpaca_api_key',
-    value: ''
-  })
 
   useEffect(() => {
     // Load user settings from localStorage or API
@@ -79,12 +59,11 @@ const Settings = () => {
     const savedProfile = localStorage.getItem('tradelab_profile')
     const savedNotifications = localStorage.getItem('tradelab_notifications')
     const savedTrading = localStorage.getItem('tradelab_trading')
-    const savedTheme = localStorage.getItem('tradelab_theme')
+    // Theme is handled by ThemeContext, no need to load it here
 
     if (savedProfile) setProfile(JSON.parse(savedProfile))
     if (savedNotifications) setNotifications(JSON.parse(savedNotifications))
     if (savedTrading) setTrading(JSON.parse(savedTrading))
-    if (savedTheme) setTheme(JSON.parse(savedTheme))
   }
 
   const saveSettings = async (settingsType, data) => {
@@ -123,26 +102,40 @@ const Settings = () => {
 
   const handleThemeSave = (e) => {
     e.preventDefault()
-    saveSettings('theme', theme)
+    // Theme is already saved via the theme context
+    setSuccess('Theme settings saved successfully!')
+    setTimeout(() => setSuccess(null), 3000)
   }
 
-  const toggleApiKeyVisibility = (key) => {
-    setShowApiKeys(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }))
+  const handleThemeChange = (newTheme) => {
+    updateTheme(newTheme)
   }
 
-  const maskApiKey = (key) => {
-    if (key.length <= 8) return '*'.repeat(key.length)
-    return key.substring(0, 4) + '*'.repeat(key.length - 8) + key.substring(key.length - 4)
+  const handleDisplayNameUpdate = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // In a real app, this would update the user's metadata via Supabase
+      // For now, we'll just save to localStorage
+      const updatedProfile = { ...profile }
+      setProfile(updatedProfile)
+      localStorage.setItem('tradelab_profile', JSON.stringify(updatedProfile))
+      setSuccess('Display name updated successfully!')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (error) {
+      setError('Failed to update display name')
+    } finally {
+      setLoading(false)
+    }
   }
+
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'trading', label: 'Trading', icon: SettingsIcon },
-    { id: 'api', label: 'API Keys', icon: Key },
     { id: 'theme', label: 'Appearance', icon: Palette },
     { id: 'security', label: 'Security', icon: Shield }
   ]
@@ -213,7 +206,7 @@ const Settings = () => {
                   Profile Information
                 </h2>
                 
-                <form onSubmit={handleProfileSave} className="space-y-6">
+                <form onSubmit={handleDisplayNameUpdate} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -461,88 +454,6 @@ const Settings = () => {
               </div>
             )}
 
-            {/* API Keys */}
-            {activeTab === 'api' && (
-              <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 border border-gray-200/50 shadow-xl">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                  <Key className="h-5 w-5 mr-2 text-purple-600" />
-                  API Keys
-                </h2>
-                
-                <div className="space-y-6">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <div className="flex items-start">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium text-yellow-800">Security Notice</h3>
-                        <p className="text-sm text-yellow-700 mt-1">
-                          Keep your API keys secure and never share them. These keys are stored locally and encrypted.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <div className="flex items-start">
-                        <Info className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium text-blue-800">API Keys Configuration</h3>
-                          <p className="text-sm text-blue-700 mt-1">
-                            API keys are stored securely in environment variables on the server. 
-                            Contact your administrator to update API keys.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-xl p-6">
-                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                          <span className="text-green-600 font-bold text-sm">A</span>
-                        </div>
-                        Alpaca API Status
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">API Key</span>
-                          <span className="text-green-600 font-medium">✓ Configured</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Secret Key</span>
-                          <span className="text-green-600 font-medium">✓ Configured</span>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Keys are loaded from environment variables
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-xl p-6">
-                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                        <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                          <span className="text-yellow-600 font-bold text-sm">B</span>
-                        </div>
-                        Binance API Status
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">API Key</span>
-                          <span className="text-green-600 font-medium">✓ Configured</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Secret Key</span>
-                          <span className="text-green-600 font-medium">✓ Configured</span>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Keys are loaded from environment variables
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Theme Settings */}
             {activeTab === 'theme' && (
@@ -563,7 +474,7 @@ const Settings = () => {
                         <button
                           key={mode.value}
                           type="button"
-                          onClick={() => setTheme({...theme, mode: mode.value})}
+                          onClick={() => handleThemeChange({ mode: mode.value })}
                           className={`p-4 rounded-xl border-2 transition-all duration-300 text-left ${
                             theme.mode === mode.value
                               ? 'border-pink-500 bg-pink-50'
@@ -590,9 +501,9 @@ const Settings = () => {
                         <button
                           key={color.value}
                           type="button"
-                          onClick={() => setTheme({...theme, primary_color: color.value})}
+                          onClick={() => handleThemeChange({ primaryColor: color.value })}
                           className={`w-12 h-12 rounded-xl ${color.color} ${
-                            theme.primary_color === color.value ? 'ring-4 ring-gray-300' : ''
+                            theme.primaryColor === color.value ? 'ring-4 ring-gray-300' : ''
                           }`}
                         />
                       ))}
@@ -607,8 +518,8 @@ const Settings = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={theme.sidebar_collapsed}
-                        onChange={(e) => setTheme({...theme, sidebar_collapsed: e.target.checked})}
+                        checked={theme.sidebarCollapsed}
+                        onChange={(e) => handleThemeChange({ sidebarCollapsed: e.target.checked })}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>

@@ -11,7 +11,7 @@ import {
   PieChart,
   Activity
 } from 'lucide-react'
-import { portfolioAPI, assetAPI } from '../lib/api'
+import { portfolioAPI, assetAPI, dataAPI } from '../lib/api'
 import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 
 const Portfolios = () => {

@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 import Loading from './components/Loading'
@@ -21,10 +22,16 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
   
   if (loading) {
-    return <Loading message="Authenticating..." />
+    return <Loading message="Checking authentication..." />
   }
   
-  return user ? children : <Navigate to="/login" />
+  if (!user) {
+    console.log('ProtectedRoute: No user found, redirecting to login')
+    return <Navigate to="/login" />
+  }
+  
+  console.log('ProtectedRoute: User authenticated:', user.email)
+  return children
 }
 
 // Public Route component (redirect to dashboard if logged in)
@@ -42,9 +49,10 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <div className="App">
-            <Routes>
+        <ThemeProvider>
+          <Router>
+            <div className="App">
+              <Routes>
               {/* Public routes */}
               <Route 
                 path="/login" 
@@ -140,6 +148,7 @@ function App() {
             </Routes>
           </div>
         </Router>
+        </ThemeProvider>
       </AuthProvider>
     </ErrorBoundary>
   )
