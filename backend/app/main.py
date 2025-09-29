@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import health, auth, assets, data, backtest, risk, trade
+from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket
 
 # Create FastAPI application
 app = FastAPI(
@@ -17,7 +17,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins.split(","),
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,6 +31,8 @@ app.include_router(data.router, prefix="/api/v1/data", tags=["data"])
 app.include_router(backtest.router, prefix="/api/v1/backtest", tags=["backtesting"])
 app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
 app.include_router(trade.router, prefix="/api/v1/trade", tags=["trading"])
+app.include_router(chat.router, prefix="/api/v1/ai", tags=["data-context"])
+app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
 
 
 @app.get("/")

@@ -30,6 +30,9 @@ scikit-learn==1.3.2
 # Paper trading
 alpaca-py==0.20.0
 
+# Local AI Support (Ollama integration via frontend)
+# No server-side AI dependencies required
+
 # Utilities
 python-dotenv==1.0.0
 pydantic==2.5.0

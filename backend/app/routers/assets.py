@@ -1,10 +1,12 @@
 """Asset management endpoints."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from app.database import get_db
-from app.auth import get_current_user
+from app.auth import get_current_user, require_user_access
 from app.models import Portfolio, Asset
 from app.schemas import (
     PortfolioCreate, PortfolioUpdate, Portfolio as PortfolioSchema,
@@ -12,6 +14,9 @@ from app.schemas import (
 )
 from datetime import datetime
 import uuid
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -24,17 +29,64 @@ async def create_portfolio(
     db: Session = Depends(get_db)
 ):
     """Create a new portfolio."""
-    db_portfolio = Portfolio(
-        user_id=current_user["user_id"],
-        name=portfolio.name,
-        description=portfolio.description,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    db.add(db_portfolio)
-    db.commit()
-    db.refresh(db_portfolio)
-    return db_portfolio
+    user_id = current_user["user_id"]
+    user_email = current_user.get("email", "N/A")
+    
+    logger.info(f"Creating portfolio '{portfolio.name}' for user {user_email} (ID: {user_id})")
+    
+    try:
+        # Validate input
+        if not portfolio.name or len(portfolio.name.strip()) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Portfolio name is required"
+            )
+        
+        # Check for duplicate portfolio names for this user
+        existing = db.query(Portfolio).filter(
+            Portfolio.user_id == user_id,
+            Portfolio.name == portfolio.name.strip()
+        ).first()
+        
+        if existing:
+            logger.warning(f"Duplicate portfolio name '{portfolio.name}' for user {user_id}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Portfolio with this name already exists"
+            )
+        
+        # Create portfolio
+        db_portfolio = Portfolio(
+            user_id=user_id,
+            name=portfolio.name.strip(),
+            description=portfolio.description.strip() if portfolio.description else None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(db_portfolio)
+        db.commit()
+        db.refresh(db_portfolio)
+        
+        logger.info(f"Successfully created portfolio {db_portfolio.id} for user {user_id}")
+        return db_portfolio
+        
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error creating portfolio: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create portfolio - database constraint violation"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error creating portfolio: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create portfolio"
+        )
 
 
 @router.get("/portfolios", response_model=List[PortfolioSchema])
@@ -43,10 +95,59 @@ async def get_portfolios(
     db: Session = Depends(get_db)
 ):
     """Get all portfolios for the current user."""
-    portfolios = db.query(Portfolio).filter(
-        Portfolio.user_id == current_user["user_id"]
-    ).all()
-    return portfolios
+    user_id = current_user["user_id"]
+    user_email = current_user.get("email", "N/A")
+    
+    logger.info(f"Retrieving portfolios for user {user_email} (ID: {user_id})")
+    
+    try:
+        # Ensure user_id is properly formatted (handle both string and UUID formats)
+        if isinstance(user_id, str):
+            # Try to parse as UUID to validate format
+            try:
+                uuid.UUID(user_id)
+            except ValueError:
+                logger.error(f"Invalid user_id format: {user_id}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+        
+        # Debug information in development mode
+        if logger.isEnabledFor(logging.DEBUG):
+            total_portfolios = db.query(Portfolio).count()
+            logger.debug(f"Total portfolios in database: {total_portfolios}")
+            
+            # Sample portfolio user IDs for debugging
+            sample_portfolios = db.query(Portfolio).limit(5).all()
+            for p in sample_portfolios:
+                logger.debug(f"Portfolio {p.id} belongs to user {p.user_id} (type: {type(p.user_id)})")
+        
+        # Query portfolios for current user with explicit string conversion
+        portfolios = db.query(Portfolio).filter(
+            Portfolio.user_id == str(user_id)
+        ).order_by(Portfolio.created_at.desc()).all()
+        
+        logger.info(f"Found {len(portfolios)} portfolios for user {user_id}")
+        
+        # Additional debug logging for portfolio persistence issues
+        if len(portfolios) == 0:
+            logger.warning(f"No portfolios found for user {user_id}. Checking for user ID variations...")
+            
+            # Check if there are portfolios with similar user IDs (debugging aid)
+            all_user_ids = db.query(Portfolio.user_id).distinct().all()
+            logger.debug(f"All user IDs in database: {[str(uid[0]) for uid in all_user_ids]}")
+        
+        return portfolios
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving portfolios for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve portfolios"
+        )
 
 
 @router.get("/portfolios/{portfolio_id}", response_model=PortfolioSchema)

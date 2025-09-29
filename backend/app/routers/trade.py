@@ -121,11 +121,17 @@ async def _get_current_price(symbol: str, asset_type: str) -> float:
         
         # Use the data fetching API to get current price
         from app.routers.data import _fetch_stock_data, _fetch_crypto_data
+        from app.schemas import DataFetchRequest
         
         if asset_type == "stock":
             try:
                 # Try to get real data first
-                data = await _fetch_stock_data(symbol, 1)  # Just 1 day
+                data_request = DataFetchRequest(
+                    symbol=symbol,
+                    asset_type=asset_type,
+                    days=1
+                )
+                data = await _fetch_stock_data(data_request, None)  # Pass None for db, we'll handle it
                 if data and 'data_preview' in data:
                     price = data['data_preview']['last_price']
                     print(f"Got real stock price for {symbol}: {price}")
@@ -142,7 +148,12 @@ async def _get_current_price(symbol: str, asset_type: str) -> float:
         elif asset_type == "crypto":
             try:
                 # Try to get real data first
-                data = await _fetch_crypto_data(symbol, 1)  # Just 1 day
+                data_request = DataFetchRequest(
+                    symbol=symbol,
+                    asset_type=asset_type,
+                    days=1
+                )
+                data = await _fetch_crypto_data(data_request, None)  # Pass None for db, we'll handle it
                 if data and 'data_preview' in data:
                     price = data['data_preview']['last_price']
                     print(f"Got real crypto price for {symbol}: {price}")

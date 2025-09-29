@@ -2,6 +2,7 @@ import React from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import OllamaChatbot from './OllamaChatbot'
 import { 
   Home, 
   BarChart3, 
@@ -21,6 +22,7 @@ const Layout = ({ children }) => {
   const { theme } = useTheme()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -193,6 +195,12 @@ const Layout = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {/* Ollama Local AI Chatbot */}
+      <OllamaChatbot 
+        isOpen={chatOpen} 
+        onToggle={() => setChatOpen(!chatOpen)}
+      />
     </div>
   )
 }

@@ -316,3 +316,341 @@ async def get_risk_metrics(
     ).order_by(RiskMetric.calculated_at.desc()).all()
     
     return metrics
+
+
+@router.get("/correlation/{portfolio_id}")
+async def get_correlation_matrix(
+    portfolio_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get correlation matrix for portfolio assets."""
+    try:
+        # Verify portfolio belongs to user
+        portfolio = db.query(Portfolio).filter(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == current_user["user_id"]
+        ).first()
+        
+        if not portfolio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Portfolio not found"
+            )
+        
+        # Get all assets in portfolio
+        assets = db.query(Asset).filter(Asset.portfolio_id == portfolio_id).all()
+        
+        if len(assets) < 2:
+            return {
+                "message": "Need at least 2 assets to calculate correlation",
+                "assets": len(assets)
+            }
+        
+        # Get price data for all assets
+        returns_data = {}
+        for asset in assets:
+            prices = db.query(AssetPrice).filter(
+                AssetPrice.symbol == asset.symbol,
+                AssetPrice.asset_type == asset.asset_type,
+                AssetPrice.timestamp >= datetime.utcnow() - timedelta(days=365)
+            ).order_by(AssetPrice.timestamp).all()
+            
+            if prices:
+                df = pd.DataFrame([
+                    {
+                        'date': price.timestamp,
+                        'close': float(price.close)
+                    }
+                    for price in prices
+                ])
+                df.set_index('date', inplace=True)
+                returns = df['close'].pct_change().dropna()
+                returns_data[asset.symbol] = returns
+        
+        if len(returns_data) < 2:
+            return {
+                "message": "Insufficient price data for correlation analysis",
+                "assets_with_data": len(returns_data)
+            }
+        
+        # Create returns DataFrame
+        returns_df = pd.DataFrame(returns_data)
+        returns_df = returns_df.dropna()
+        
+        # Calculate correlation matrix
+        correlation_matrix = returns_df.corr()
+        
+        # Convert to serializable format
+        correlation_data = {}
+        for symbol1 in correlation_matrix.columns:
+            correlation_data[symbol1] = {}
+            for symbol2 in correlation_matrix.columns:
+                correlation_data[symbol1][symbol2] = float(correlation_matrix.loc[symbol1, symbol2])
+        
+        # Calculate diversification metrics
+        avg_correlation = correlation_matrix.values[np.triu_indices_from(correlation_matrix.values, k=1)].mean()
+        max_correlation = correlation_matrix.values[np.triu_indices_from(correlation_matrix.values, k=1)].max()
+        min_correlation = correlation_matrix.values[np.triu_indices_from(correlation_matrix.values, k=1)].min()
+        
+        return {
+            "correlation_matrix": correlation_data,
+            "diversification_metrics": {
+                "average_correlation": float(avg_correlation),
+                "maximum_correlation": float(max_correlation),
+                "minimum_correlation": float(min_correlation),
+                "diversification_score": float(1 - avg_correlation)  # Higher is better
+            },
+            "assets": list(returns_data.keys()),
+            "data_points": len(returns_df),
+            "calculated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error calculating correlation matrix: {str(e)}"
+        )
+
+
+@router.get("/stress-test/{portfolio_id}")
+async def portfolio_stress_test(
+    portfolio_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Run stress testing scenarios on portfolio."""
+    try:
+        # Verify portfolio belongs to user
+        portfolio = db.query(Portfolio).filter(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == current_user["user_id"]
+        ).first()
+        
+        if not portfolio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Portfolio not found"
+            )
+        
+        # Get portfolio assets and their price data
+        assets = db.query(Asset).filter(Asset.portfolio_id == portfolio_id).all()
+        
+        portfolio_data = {}
+        for asset in assets:
+            prices = db.query(AssetPrice).filter(
+                AssetPrice.symbol == asset.symbol,
+                AssetPrice.asset_type == asset.asset_type,
+                AssetPrice.timestamp >= datetime.utcnow() - timedelta(days=365)
+            ).order_by(AssetPrice.timestamp).all()
+            
+            if prices:
+                df = pd.DataFrame([
+                    {
+                        'date': price.timestamp,
+                        'close': float(price.close)
+                    }
+                    for price in prices
+                ])
+                df.set_index('date', inplace=True)
+                returns = df['close'].pct_change().dropna()
+                portfolio_data[asset.symbol] = returns
+        
+        if not portfolio_data:
+            return {"message": "No price data available for stress testing"}
+        
+        # Calculate portfolio returns (equal weight)
+        returns_df = pd.DataFrame(portfolio_data)
+        portfolio_returns = returns_df.mean(axis=1).dropna()
+        
+        # Define stress scenarios
+        scenarios = {
+            "market_crash": {
+                "description": "30% market decline scenario",
+                "shock": -0.30
+            },
+            "black_monday": {
+                "description": "22% single-day decline (Black Monday 1987)",
+                "shock": -0.22
+            },
+            "dot_com_crash": {
+                "description": "78% decline over 2 years (2000-2002)",
+                "shock": -0.78
+            },
+            "financial_crisis": {
+                "description": "57% decline (2007-2009)",
+                "shock": -0.57
+            },
+            "covid_crash": {
+                "description": "34% decline in 1 month (March 2020)",
+                "shock": -0.34
+            }
+        }
+        
+        stress_results = {}
+        current_value = 100000  # Assume $100k portfolio
+        
+        for scenario_name, scenario in scenarios.items():
+            shocked_value = current_value * (1 + scenario["shock"])
+            loss_amount = current_value - shocked_value
+            
+            stress_results[scenario_name] = {
+                "description": scenario["description"],
+                "shock_percentage": scenario["shock"] * 100,
+                "portfolio_value_before": current_value,
+                "portfolio_value_after": shocked_value,
+                "absolute_loss": loss_amount,
+                "time_to_recover_days": estimate_recovery_time(portfolio_returns, abs(scenario["shock"]))
+            }
+        
+        # Calculate portfolio resilience metrics
+        resilience_metrics = {
+            "worst_case_scenario": min(scenarios.values(), key=lambda x: x["shock"])["shock"] * 100,
+            "average_scenario_loss": np.mean([s["shock"] for s in scenarios.values()]) * 100,
+            "portfolio_volatility": float(portfolio_returns.std() * np.sqrt(252) * 100),  # Annualized %
+            "maximum_daily_loss": float(portfolio_returns.min() * 100)
+        }
+        
+        return {
+            "stress_scenarios": stress_results,
+            "resilience_metrics": resilience_metrics,
+            "recommendation": generate_stress_recommendation(stress_results, resilience_metrics),
+            "calculated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error running stress test: {str(e)}"
+        )
+
+
+def estimate_recovery_time(returns: pd.Series, loss_percentage: float) -> int:
+    """Estimate recovery time based on historical returns."""
+    if len(returns) == 0:
+        return 0
+    
+    avg_daily_return = returns.mean()
+    if avg_daily_return <= 0:
+        return 9999  # Very long recovery
+    
+    # Calculate days needed to recover the loss
+    recovery_days = int(np.log(1 / (1 - loss_percentage)) / avg_daily_return)
+    return min(recovery_days, 9999)
+
+
+def generate_stress_recommendation(stress_results: dict, resilience_metrics: dict) -> str:
+    """Generate recommendation based on stress test results."""
+    avg_loss = abs(resilience_metrics["average_scenario_loss"])
+    volatility = resilience_metrics["portfolio_volatility"]
+    
+    if avg_loss > 50:
+        return "HIGH RISK: Portfolio is vulnerable to severe market stress. Consider diversification and hedging strategies."
+    elif avg_loss > 30:
+        return "MODERATE RISK: Portfolio shows significant stress vulnerability. Review asset allocation and consider defensive positions."
+    elif volatility > 25:
+        return "HIGH VOLATILITY: While stress resilient, portfolio has high daily volatility. Consider volatility management."
+    else:
+        return "WELL-POSITIONED: Portfolio shows good resilience to stress scenarios. Continue monitoring and gradual optimization."
+
+
+@router.get("/sector-analysis/{portfolio_id}")
+async def portfolio_sector_analysis(
+    portfolio_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyze portfolio sector concentration and diversification."""
+    try:
+        # Verify portfolio belongs to user
+        portfolio = db.query(Portfolio).filter(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == current_user["user_id"]
+        ).first()
+        
+        if not portfolio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Portfolio not found"
+            )
+        
+        # Get portfolio assets
+        assets = db.query(Asset).filter(Asset.portfolio_id == portfolio_id).all()
+        
+        if not assets:
+            return {"message": "No assets in portfolio"}
+        
+        # Categorize assets by type and mock sector (in real implementation, use external API)
+        sector_mapping = {
+            "AAPL": "Technology",
+            "MSFT": "Technology", 
+            "GOOGL": "Technology",
+            "TSLA": "Automotive",
+            "JPM": "Financial",
+            "JNJ": "Healthcare",
+            "BTC": "Cryptocurrency",
+            "ETH": "Cryptocurrency",
+            "BNB": "Cryptocurrency"
+        }
+        
+        asset_analysis = []
+        sector_counts = {}
+        type_counts = {"stock": 0, "crypto": 0}
+        
+        for asset in assets:
+            sector = sector_mapping.get(asset.symbol, "Other")
+            type_counts[asset.asset_type] += 1
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+            
+            asset_analysis.append({
+                "symbol": asset.symbol,
+                "name": asset.name,
+                "asset_type": asset.asset_type,
+                "sector": sector,
+                "exchange": asset.exchange
+            })
+        
+        # Calculate concentration metrics
+        total_assets = len(assets)
+        sector_percentages = {sector: (count / total_assets) * 100 for sector, count in sector_counts.items()}
+        type_percentages = {type_name: (count / total_assets) * 100 for type_name, count in type_counts.items()}
+        
+        # Calculate Herfindahl-Hirschman Index for concentration
+        hhi_sector = sum((pct / 100) ** 2 for pct in sector_percentages.values())
+        hhi_type = sum((pct / 100) ** 2 for pct in type_percentages.values())
+        
+        # Generate diversification recommendations
+        recommendations = []
+        
+        if hhi_sector > 0.25:  # High concentration
+            recommendations.append("High sector concentration detected. Consider adding assets from different sectors.")
+        
+        if type_percentages.get("crypto", 0) > 20:
+            recommendations.append("High cryptocurrency allocation. Consider the increased volatility and regulatory risks.")
+        
+        if len(sector_counts) < 3:
+            recommendations.append("Limited sector diversification. Consider expanding to at least 3-5 different sectors.")
+        
+        if not recommendations:
+            recommendations.append("Good diversification across sectors and asset types.")
+        
+        return {
+            "assets": asset_analysis,
+            "sector_breakdown": sector_percentages,
+            "asset_type_breakdown": type_percentages,
+            "concentration_metrics": {
+                "sector_hhi": float(hhi_sector),
+                "type_hhi": float(hhi_type),
+                "diversification_score": float(1 - hhi_sector),  # Higher is better
+                "total_sectors": len(sector_counts),
+                "total_assets": total_assets
+            },
+            "recommendations": recommendations,
+            "calculated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing portfolio sectors: {str(e)}"
+        )

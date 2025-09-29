@@ -12,7 +12,7 @@ import {
   RefreshCw,
   BarChart3
 } from 'lucide-react'
-import { tradeAPI, dataAPI } from '../lib/api'
+import { tradeAPI, dataAPI, portfolioAPI } from '../lib/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const Trading = () => {
@@ -33,6 +33,7 @@ const Trading = () => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [currentPrice, setCurrentPrice] = useState(null)
+  const [positionPrices, setPositionPrices] = useState({})
 
   useEffect(() => {
     loadPositions()
@@ -40,13 +41,55 @@ const Trading = () => {
     fetchCurrentPrice()
   }, [])
 
+  useEffect(() => {
+    if (positions.positions && positions.positions.length > 0) {
+      calculateTotalPnL()
+    }
+  }, [positions])
+
   const loadPositions = async () => {
     try {
       const response = await tradeAPI.getPositions()
+      console.log('Trading: Positions response:', response)
       setPositions(response.data || [])
+      
+      // Fetch current prices for all positions
+      if (response.data && response.data.positions) {
+        console.log('Trading: Fetching prices for positions:', response.data.positions)
+        fetchPositionPrices(response.data.positions)
+      }
     } catch (error) {
       console.error('Error loading positions:', error)
     }
+  }
+
+  const fetchPositionPrices = async (positions) => {
+    const pricePromises = positions.map(async (position) => {
+      try {
+        const response = await dataAPI.fetchData({
+          symbol: position.symbol,
+          asset_type: position.asset_type,
+          days: 1
+        })
+        if (response.data && response.data.data_preview) {
+          return {
+            symbol: position.symbol,
+            price: response.data.data_preview.last_price
+          }
+        }
+        return { symbol: position.symbol, price: position.average_price }
+      } catch (error) {
+        console.error(`Error fetching price for ${position.symbol}:`, error)
+        return { symbol: position.symbol, price: position.average_price }
+      }
+    })
+    
+    const prices = await Promise.all(pricePromises)
+    const priceMap = {}
+    prices.forEach(({ symbol, price }) => {
+      priceMap[symbol] = price
+    })
+    setPositionPrices(priceMap)
   }
 
   const loadOrders = async () => {
@@ -76,18 +119,22 @@ const Trading = () => {
 
   const handleOrderSubmit = async (e) => {
     e.preventDefault()
+    console.log('Trading: Order form submitted', orderForm)
     setLoading(true)
     setError(null)
     setSuccess(null)
 
     try {
       // For now, we need a portfolio_id. Let's create a default one or get the first one
+      console.log('Trading: Fetching portfolios...')
       const portfoliosResponse = await portfolioAPI.getPortfolios()
+      console.log('Trading: Portfolios response:', portfoliosResponse)
       const portfolioId = portfoliosResponse.data && portfoliosResponse.data.length > 0 
         ? portfoliosResponse.data[0].id 
         : null
 
       if (!portfolioId) {
+        console.log('Trading: No portfolio found')
         setError('Please create a portfolio first')
         return
       }
@@ -101,7 +148,9 @@ const Trading = () => {
         broker: orderForm.broker
       }
       
+      console.log('Trading: Placing order with data:', orderData)
       const response = await tradeAPI.placeOrder(orderData)
+      console.log('Trading: Order response:', response)
       setSuccess('Order placed successfully!')
       setOrderForm({
         symbol: 'AAPL',
@@ -117,6 +166,7 @@ const Trading = () => {
       loadPositions()
       loadOrders()
     } catch (error) {
+      console.error('Trading: Order error:', error)
       setError(error.response?.data?.detail || 'Failed to place order')
     } finally {
       setLoading(false)
@@ -164,11 +214,16 @@ const Trading = () => {
     }, 0)
   }
 
+  const [totalPnL, setTotalPnL] = useState(0)
+
   const calculateTotalPnL = async () => {
-    if (!positions.positions) return 0
+    if (!positions.positions) {
+      setTotalPnL(0)
+      return 0
+    }
     
     try {
-      let totalPnL = 0
+      let totalPnLValue = 0
       for (const position of positions.positions) {
         // Fetch current price for each position
         const response = await dataAPI.fetchData({
@@ -180,12 +235,14 @@ const Trading = () => {
         if (response.data && response.data.data_preview) {
           const currentPrice = response.data.data_preview.last_price
           const pnl = (currentPrice - position.average_price) * position.quantity
-          totalPnL += pnl
+          totalPnLValue += pnl
         }
       }
-      return totalPnL
+      setTotalPnL(totalPnLValue)
+      return totalPnLValue
     } catch (error) {
       console.error('Error calculating P&L:', error)
+      setTotalPnL(0)
       return 0
     }
   }
@@ -262,14 +319,14 @@ const Trading = () => {
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-200/50 shadow-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm text-gray-600">Total P&L</div>
-              {calculateTotalPnL() >= 0 ? (
+              {totalPnL >= 0 ? (
                 <TrendingUp className="h-5 w-5 text-green-500" />
               ) : (
                 <TrendingDown className="h-5 w-5 text-red-500" />
               )}
             </div>
-            <div className={`text-2xl font-bold ${calculateTotalPnL() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(calculateTotalPnL())}
+            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(totalPnL)}
             </div>
           </div>
           
@@ -526,9 +583,17 @@ const Trading = () => {
                   </thead>
                   <tbody>
                     {positions.positions.map((position, index) => {
-                      const currentPrice = position.average_price * 1.05 // Mock 5% gain
+                      const currentPrice = positionPrices[position.symbol] || position.average_price
                       const pnl = (currentPrice - position.average_price) * position.quantity
-                      const pnlPercent = ((currentPrice - position.average_price) / position.average_price) * 100
+                      const pnlPercent = position.average_price > 0 ? ((currentPrice - position.average_price) / position.average_price) * 100 : 0
+                      
+                      console.log(`Position ${position.symbol}:`, {
+                        averagePrice: position.average_price,
+                        currentPrice: currentPrice,
+                        quantity: position.quantity,
+                        pnl: pnl,
+                        pnlPercent: pnlPercent
+                      })
                       
                       return (
                         <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">

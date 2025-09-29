@@ -43,11 +43,19 @@ class MovingAverageCrossoverStrategy(bt.Strategy):
             'equity': self.broker.getvalue()
         })
         
+        # Debug logging
+        if len(self.equity_curve) <= 5:  # Only log first few bars
+            print(f"Bar {len(self.equity_curve)}: Close={self.data.close[0]:.2f}, "
+                  f"Short MA={self.short_ma[0]:.2f}, Long MA={self.long_ma[0]:.2f}, "
+                  f"Crossover={self.crossover[0]}, Position={self.position.size}")
+        
         if not self.position:
             if self.crossover > 0:  # Short MA crosses above Long MA
+                print(f"BUY signal at {self.data.datetime.date(0)}: Close={self.data.close[0]:.2f}")
                 self.buy()
         else:
             if self.crossover < 0:  # Short MA crosses below Long MA
+                print(f"SELL signal at {self.data.datetime.date(0)}: Close={self.data.close[0]:.2f}")
                 self.sell()
     
     def notify_order(self, order):
@@ -79,6 +87,9 @@ async def run_backtest(
 ):
     """Run a backtest for the given parameters."""
     try:
+        # Calculate the date range for data fetching (ensure we have enough data for backtesting)
+        days_needed = max(60, (request.end_date - request.start_date).days + 30)  # Extra buffer for moving averages
+        
         # Get price data from database
         prices = db.query(AssetPrice).filter(
             AssetPrice.symbol == request.symbol,
@@ -87,19 +98,20 @@ async def run_backtest(
             AssetPrice.timestamp <= request.end_date
         ).order_by(AssetPrice.timestamp).all()
         
-        if not prices:
+        if not prices or len(prices) < 30:  # Need at least 30 days for long MA
             # Try to fetch data first
             try:
                 from app.routers.data import _fetch_stock_data, _fetch_crypto_data
                 from app.schemas import DataFetchRequest
                 
-                # Create a mock request for data fetching
+                # Create a request for data fetching with sufficient days
                 data_request = DataFetchRequest(
                     symbol=request.symbol,
                     asset_type=request.asset_type,
-                    days=30
+                    days=days_needed
                 )
                 
+                print(f"Fetching {days_needed} days of data for backtesting...")
                 if request.asset_type == 'stock':
                     await _fetch_stock_data(data_request, db)
                 else:
@@ -116,10 +128,10 @@ async def run_backtest(
             except Exception as e:
                 print(f"Error fetching data: {e}")
             
-            if not prices:
+            if not prices or len(prices) < 30:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"No price data found for {request.symbol}. Please fetch data first from the Dashboard."
+                    detail=f"Insufficient price data found for {request.symbol}. Need at least 30 days of data for backtesting. Please fetch data first from the Dashboard."
                 )
         
         # Convert to pandas DataFrame
@@ -135,6 +147,10 @@ async def run_backtest(
             for price in prices
         ])
         df.set_index('datetime', inplace=True)
+        
+        print(f"Backtest data: {len(df)} data points from {df.index[0]} to {df.index[-1]}")
+        print(f"Price range: ${df['close'].min():.2f} - ${df['close'].max():.2f}")
+        print(f"First few prices: {df['close'].head().tolist()}")
         
         # Create Backtrader cerebro engine
         cerebro = bt.Cerebro()

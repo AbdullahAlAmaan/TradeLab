@@ -16,7 +16,6 @@ import {
 import { portfolioAPI, backtestAPI } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 // import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import IntegrationTest from '../components/IntegrationTest'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -136,19 +135,6 @@ const Dashboard = () => {
               Welcome to TradeLab
             </h1>
             <p className="text-gray-600 mt-2 text-lg">Your comprehensive trading platform for backtesting, risk analysis, and paper trading</p>
-          </div>
-          <div className="hidden md:block">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">System Status</p>
-                  <p className="text-lg font-semibold text-green-600">All Systems Go</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -409,10 +395,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Integration Test Section */}
-      <div className="mt-8">
-        <IntegrationTest />
-      </div>
     </div>
   )
 }
