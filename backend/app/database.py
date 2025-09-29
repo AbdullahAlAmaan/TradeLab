@@ -34,9 +34,9 @@ def construct_database_url() -> str:
             url_parts = settings.supabase_url.replace("https://", "").replace("http://", "")
             project_ref = url_parts.split('.')[0]
             
-            # Construct Supabase connection string
-            # Format: postgresql://postgres.project_ref:password@aws-0-region.pooler.supabase.com:6543/postgres
-            DATABASE_URL = f"postgresql://postgres.{project_ref}:{settings.supabase_db_password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+            # Construct Supabase connection string using the correct format
+            # Format: postgresql://postgres.project_ref:password@aws-1-ca-central-1.pooler.supabase.com:5432/postgres
+            DATABASE_URL = f"postgresql://postgres.{project_ref}:{settings.supabase_db_password}@aws-1-ca-central-1.pooler.supabase.com:5432/postgres"
             logger.info(f"Using Supabase database for project: {project_ref}")
             return DATABASE_URL
         else:

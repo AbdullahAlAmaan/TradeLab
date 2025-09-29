@@ -42,6 +42,17 @@ async def create_portfolio(
                 detail="Portfolio name is required"
             )
         
+        # Test database connection first
+        try:
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
+        except Exception as db_error:
+            logger.error(f"Database connection failed: {db_error}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database connection failed. Please check your database configuration."
+            )
+        
         # Check for duplicate portfolio names for this user
         existing = db.query(Portfolio).filter(
             Portfolio.user_id == user_id,
@@ -56,12 +67,14 @@ async def create_portfolio(
             )
         
         # Create portfolio
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         db_portfolio = Portfolio(
-            user_id=user_id,
+            user_id=uuid.UUID(user_id),
             name=portfolio.name.strip(),
             description=portfolio.description.strip() if portfolio.description else None,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=now,
+            updated_at=now
         )
         
         db.add(db_portfolio)
@@ -71,6 +84,8 @@ async def create_portfolio(
         logger.info(f"Successfully created portfolio {db_portfolio.id} for user {user_id}")
         return db_portfolio
         
+    except HTTPException:
+        raise
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Database integrity error creating portfolio: {e}")
@@ -78,8 +93,6 @@ async def create_portfolio(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to create portfolio - database constraint violation"
         )
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Unexpected error creating portfolio: {e}")
