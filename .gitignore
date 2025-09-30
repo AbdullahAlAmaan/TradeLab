@@ -141,6 +141,7 @@ frontend/.env
 # Test files
 test_*.py
 *_test.py
+!test_main.py
 
 # Temporary files
 temp/
