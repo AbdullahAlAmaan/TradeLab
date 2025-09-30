@@ -1,8 +1,0 @@
-# Ultra-minimal requirements for Vercel testing
-fastapi
-uvicorn
-sqlalchemy
-psycopg2-binary
-supabase
-python-dotenv
-pydantic
