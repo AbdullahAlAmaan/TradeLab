@@ -245,7 +245,6 @@ async def run_backtest(
         print(f"🚀 DEBUG: Converting numpy types - total_trades: {type(total_trades)} = {total_trades}")
         
         # Convert numpy types to Python native types
-        import numpy as np
         if isinstance(sharpe_ratio, np.floating):
             sharpe_ratio = float(sharpe_ratio)
             print(f"🚀 DEBUG: Converted sharpe_ratio to float: {sharpe_ratio}")
