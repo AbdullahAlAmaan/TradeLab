@@ -275,6 +275,8 @@ async def create_asset(
         asset_type=asset.asset_type,
         name=asset.name,
         exchange=asset.exchange,
+        quantity=asset.quantity or 1,
+        purchase_price=asset.purchase_price or 0,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )

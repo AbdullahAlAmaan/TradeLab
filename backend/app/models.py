@@ -32,6 +32,8 @@ class Asset(Base):
     asset_type = Column(String(10), nullable=False)  # 'stock' or 'crypto'
     name = Column(String(255), nullable=False)
     exchange = Column(String(50))
+    quantity = Column(Numeric(20, 8), nullable=False, default=1)  # Number of shares/units
+    purchase_price = Column(Numeric(20, 8), nullable=False, default=0)  # Purchase price per unit
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
     

@@ -38,6 +38,8 @@ class AssetBase(BaseModel):
     asset_type: str = Field(..., pattern="^(stock|crypto)$")
     name: str = Field(..., max_length=255)
     exchange: Optional[str] = Field(None, max_length=50)
+    quantity: Optional[Decimal] = Field(1, ge=0)
+    purchase_price: Optional[Decimal] = Field(0, ge=0)
 
 
 class AssetCreate(AssetBase):
