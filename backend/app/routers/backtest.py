@@ -185,7 +185,7 @@ async def run_backtest(
         cerebro.run()
         
         # Get results
-        final_value = cerebro.broker.getvalue()
+        final_value = float(cerebro.broker.getvalue())
         total_return = (final_value - float(request.initial_capital)) / float(request.initial_capital)
         
         # Calculate additional metrics
@@ -206,7 +206,9 @@ async def run_backtest(
         # Calculate Sharpe ratio
         if len(equity_curve) > 1:
             returns = pd.Series([eq['equity'] for eq in equity_curve]).pct_change().dropna()
-            sharpe_ratio = float(returns.mean() / returns.std() * np.sqrt(252)) if returns.std() > 0 else 0.0
+            mean_return = float(returns.mean())
+            std_return = float(returns.std())
+            sharpe_ratio = float(mean_return / std_return * np.sqrt(252)) if std_return > 0 else 0.0
         else:
             sharpe_ratio = 0.0
         
