@@ -240,10 +240,11 @@ async def run_backtest(
         win_rate = float(winning_trades / total_trades) if total_trades > 0 else 0.0
         
         # Debug: Check types before creating result
-        print(f"DEBUG - sharpe_ratio type: {type(sharpe_ratio)}, value: {sharpe_ratio}")
-        print(f"DEBUG - max_drawdown type: {type(max_drawdown)}, value: {max_drawdown}")
-        print(f"DEBUG - win_rate type: {type(win_rate)}, value: {win_rate}")
-        print(f"DEBUG - total_trades type: {type(total_trades)}, value: {total_trades}")
+        print(f"🚀 RAILWAY DEPLOYMENT TEST - sharpe_ratio type: {type(sharpe_ratio)}, value: {sharpe_ratio}")
+        print(f"🚀 RAILWAY DEPLOYMENT TEST - max_drawdown type: {type(max_drawdown)}, value: {max_drawdown}")
+        print(f"🚀 RAILWAY DEPLOYMENT TEST - win_rate type: {type(win_rate)}, value: {win_rate}")
+        print(f"🚀 RAILWAY DEPLOYMENT TEST - total_trades type: {type(total_trades)}, value: {total_trades}")
+        print("🚀 RAILWAY DEPLOYMENT TEST - About to convert numpy types")
         
         # Import numpy conversion utilities
         from app.numpy_fix import safe_float, safe_int
