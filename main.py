@@ -48,7 +48,7 @@ async def root():
         "message": "Welcome to TradeLab API",
         "version": "1.0.1",
         "docs": "/docs",
-        "status": "deployed_on_railway"
+        "status": "deployed_on_railway_with_numpy_fix"
     }
 
 @app.get("/test")
