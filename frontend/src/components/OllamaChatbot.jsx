@@ -94,7 +94,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         return { enhanced_prompt: userQuery, context_used: false }
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
       const response = await fetch(`${apiUrl}/api/v1/ai/smart-context`, {
         method: 'POST',
         headers: {
@@ -136,7 +136,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         return null
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
       const response = await fetch(`${apiUrl}/api/v1/ai/context`, {
         method: 'POST',
         headers: {
