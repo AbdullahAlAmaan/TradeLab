@@ -206,13 +206,13 @@ async def run_backtest(
         # Calculate Sharpe ratio
         if len(equity_curve) > 1:
             returns = pd.Series([eq['equity'] for eq in equity_curve]).pct_change().dropna()
-            sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0
+            sharpe_ratio = float(returns.mean() / returns.std() * np.sqrt(252)) if returns.std() > 0 else 0.0
         else:
-            sharpe_ratio = 0
+            sharpe_ratio = 0.0
         
         # Calculate max drawdown
         equity_values = [eq['equity'] for eq in equity_curve]
-        max_drawdown = 0
+        max_drawdown = 0.0
         if len(equity_values) > 0:
             peak = equity_values[0]
             for value in equity_values:
@@ -235,7 +235,7 @@ async def run_backtest(
                 except (IndexError, KeyError):
                     continue
         
-        win_rate = winning_trades / total_trades if total_trades > 0 else 0
+        win_rate = float(winning_trades / total_trades) if total_trades > 0 else 0.0
         
         # Create backtest result
         backtest_result = BacktestResultModel(
