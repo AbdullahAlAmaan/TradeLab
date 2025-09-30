@@ -41,7 +41,17 @@ async def root():
     return {
         "message": "Welcome to TradeLab API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "status": "deployed_on_vercel"
+    }
+
+@app.get("/test")
+async def test():
+    """Simple test endpoint."""
+    return {
+        "status": "ok",
+        "message": "API is working",
+        "python_version": "3.12"
     }
 
 # For Vercel deployment
