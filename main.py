@@ -9,7 +9,7 @@ from app.routers import health, auth, assets, data, backtest, risk, trade, chat,
 app = FastAPI(
     title="TradeLab API",
     description="A comprehensive trading platform with backtesting, risk analysis, and paper trading",
-    version="1.0.0",
+    version="1.0.2",
     docs_url="/docs",
     redoc_url="/redoc"
 )
