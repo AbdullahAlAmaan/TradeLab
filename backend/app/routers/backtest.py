@@ -245,29 +245,25 @@ async def run_backtest(
         print(f"DEBUG - win_rate type: {type(win_rate)}, value: {win_rate}")
         print(f"DEBUG - total_trades type: {type(total_trades)}, value: {total_trades}")
         
+        # Import numpy conversion utilities
+        from app.numpy_fix import safe_float, safe_int
+        
         # Force convert all values to ensure they're Python native types
         # This is a critical fix for numpy type conversion
-        sharpe_ratio = float(sharpe_ratio) if sharpe_ratio is not None else 0.0
-        max_drawdown = float(max_drawdown) if max_drawdown is not None else 0.0
-        win_rate = float(win_rate) if win_rate is not None else 0.0
-        total_trades = int(total_trades) if total_trades is not None else 0
-        final_value = float(final_value) if final_value is not None else 0.0
-        total_return = float(total_return) if total_return is not None else 0.0
+        sharpe_ratio = safe_float(sharpe_ratio)
+        max_drawdown = safe_float(max_drawdown)
+        win_rate = safe_float(win_rate)
+        total_trades = safe_int(total_trades)
+        final_value = safe_float(final_value)
+        total_return = safe_float(total_return)
         
-        # Additional safety: convert any remaining numpy types
-        import numpy as np
-        if isinstance(sharpe_ratio, np.floating):
-            sharpe_ratio = float(sharpe_ratio)
-        if isinstance(max_drawdown, np.floating):
-            max_drawdown = float(max_drawdown)
-        if isinstance(win_rate, np.floating):
-            win_rate = float(win_rate)
-        if isinstance(total_trades, np.integer):
-            total_trades = int(total_trades)
-        if isinstance(final_value, np.floating):
-            final_value = float(final_value)
-        if isinstance(total_return, np.floating):
-            total_return = float(total_return)
+        # Final safety check - ensure all values are Python native types
+        print(f"FINAL CHECK - sharpe_ratio type: {type(sharpe_ratio)}, value: {sharpe_ratio}")
+        print(f"FINAL CHECK - max_drawdown type: {type(max_drawdown)}, value: {max_drawdown}")
+        print(f"FINAL CHECK - win_rate type: {type(win_rate)}, value: {win_rate}")
+        print(f"FINAL CHECK - total_trades type: {type(total_trades)}, value: {total_trades}")
+        print(f"FINAL CHECK - final_value type: {type(final_value)}, value: {final_value}")
+        print(f"FINAL CHECK - total_return type: {type(total_return)}, value: {total_return}")
         
         # Create backtest result
         backtest_result = BacktestResultModel(
