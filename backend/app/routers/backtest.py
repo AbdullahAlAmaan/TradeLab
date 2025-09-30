@@ -246,12 +246,28 @@ async def run_backtest(
         print(f"DEBUG - total_trades type: {type(total_trades)}, value: {total_trades}")
         
         # Force convert all values to ensure they're Python native types
-        sharpe_ratio = float(sharpe_ratio)
-        max_drawdown = float(max_drawdown)
-        win_rate = float(win_rate)
-        total_trades = int(total_trades)
-        final_value = float(final_value)
-        total_return = float(total_return)
+        # This is a critical fix for numpy type conversion
+        sharpe_ratio = float(sharpe_ratio) if sharpe_ratio is not None else 0.0
+        max_drawdown = float(max_drawdown) if max_drawdown is not None else 0.0
+        win_rate = float(win_rate) if win_rate is not None else 0.0
+        total_trades = int(total_trades) if total_trades is not None else 0
+        final_value = float(final_value) if final_value is not None else 0.0
+        total_return = float(total_return) if total_return is not None else 0.0
+        
+        # Additional safety: convert any remaining numpy types
+        import numpy as np
+        if isinstance(sharpe_ratio, np.floating):
+            sharpe_ratio = float(sharpe_ratio)
+        if isinstance(max_drawdown, np.floating):
+            max_drawdown = float(max_drawdown)
+        if isinstance(win_rate, np.floating):
+            win_rate = float(win_rate)
+        if isinstance(total_trades, np.integer):
+            total_trades = int(total_trades)
+        if isinstance(final_value, np.floating):
+            final_value = float(final_value)
+        if isinstance(total_return, np.floating):
+            total_return = float(total_return)
         
         # Create backtest result
         backtest_result = BacktestResultModel(
