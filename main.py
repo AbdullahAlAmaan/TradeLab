@@ -9,7 +9,101 @@ from fastapi.middleware.cors import CORSMiddleware
 
 print("🚀 DEBUG: Importing app modules...")
 from app.config import settings
-from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket, llm_proxy
+print("🚀 DEBUG: Config imported successfully")
+
+print("🚀 DEBUG: Importing routers...")
+
+# Debug: Check if llm_proxy.py exists
+import os
+print(f"🚀 DEBUG: Current working directory: {os.getcwd()}")
+print(f"🚀 DEBUG: Checking if llm_proxy.py exists...")
+llm_proxy_path = "app/routers/llm_proxy.py"
+if os.path.exists(llm_proxy_path):
+    print(f"✅ DEBUG: {llm_proxy_path} exists")
+    print(f"🚀 DEBUG: File size: {os.path.getsize(llm_proxy_path)} bytes")
+else:
+    print(f"❌ DEBUG: {llm_proxy_path} does not exist")
+
+# Debug: List all files in routers directory
+routers_dir = "app/routers"
+if os.path.exists(routers_dir):
+    print(f"🚀 DEBUG: Files in {routers_dir}:")
+    for file in os.listdir(routers_dir):
+        if file.endswith('.py'):
+            print(f"  - {file}")
+else:
+    print(f"❌ DEBUG: {routers_dir} directory does not exist")
+
+# Debug: Check __init__.py content
+init_path = "app/routers/__init__.py"
+if os.path.exists(init_path):
+    print(f"🚀 DEBUG: Reading {init_path} content:")
+    with open(init_path, 'r') as f:
+        content = f.read()
+        print(f"Content:\n{content}")
+else:
+    print(f"❌ DEBUG: {init_path} does not exist")
+try:
+    from app.routers import health
+    print("✅ DEBUG: health router imported")
+except Exception as e:
+    print(f"❌ DEBUG: health router import failed: {e}")
+
+try:
+    from app.routers import auth
+    print("✅ DEBUG: auth router imported")
+except Exception as e:
+    print(f"❌ DEBUG: auth router import failed: {e}")
+
+try:
+    from app.routers import assets
+    print("✅ DEBUG: assets router imported")
+except Exception as e:
+    print(f"❌ DEBUG: assets router import failed: {e}")
+
+try:
+    from app.routers import data
+    print("✅ DEBUG: data router imported")
+except Exception as e:
+    print(f"❌ DEBUG: data router import failed: {e}")
+
+try:
+    from app.routers import backtest
+    print("✅ DEBUG: backtest router imported")
+except Exception as e:
+    print(f"❌ DEBUG: backtest router import failed: {e}")
+
+try:
+    from app.routers import risk
+    print("✅ DEBUG: risk router imported")
+except Exception as e:
+    print(f"❌ DEBUG: risk router import failed: {e}")
+
+try:
+    from app.routers import trade
+    print("✅ DEBUG: trade router imported")
+except Exception as e:
+    print(f"❌ DEBUG: trade router import failed: {e}")
+
+try:
+    from app.routers import chat
+    print("✅ DEBUG: chat router imported")
+except Exception as e:
+    print(f"❌ DEBUG: chat router import failed: {e}")
+
+try:
+    from app.routers import websocket
+    print("✅ DEBUG: websocket router imported")
+except Exception as e:
+    print(f"❌ DEBUG: websocket router import failed: {e}")
+
+try:
+    from app.routers import llm_proxy
+    print("✅ DEBUG: llm_proxy router imported")
+except Exception as e:
+    print(f"❌ DEBUG: llm_proxy router import failed: {e}")
+
+print("🚀 DEBUG: All router imports attempted")
 
 print("🚀 DEBUG: All imports successful")
 print("🚀 DEBUG: About to create FastAPI app")
@@ -41,16 +135,67 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router, prefix="/api/v1", tags=["health"])
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
-app.include_router(assets.router, prefix="/api/v1/assets", tags=["assets"])
-app.include_router(data.router, prefix="/api/v1/data", tags=["data"])
-app.include_router(backtest.router, prefix="/api/v1/backtest", tags=["backtesting"])
-app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
-app.include_router(trade.router, prefix="/api/v1/trade", tags=["trading"])
-app.include_router(chat.router, prefix="/api/v1/ai", tags=["data-context"])
-app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
-app.include_router(llm_proxy.router, prefix="/api/v1", tags=["llm-proxy"])
+print("🚀 DEBUG: About to include routers...")
+
+try:
+    app.include_router(health.router, prefix="/api/v1", tags=["health"])
+    print("✅ DEBUG: health router included")
+except Exception as e:
+    print(f"❌ DEBUG: health router inclusion failed: {e}")
+
+try:
+    app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
+    print("✅ DEBUG: auth router included")
+except Exception as e:
+    print(f"❌ DEBUG: auth router inclusion failed: {e}")
+
+try:
+    app.include_router(assets.router, prefix="/api/v1/assets", tags=["assets"])
+    print("✅ DEBUG: assets router included")
+except Exception as e:
+    print(f"❌ DEBUG: assets router inclusion failed: {e}")
+
+try:
+    app.include_router(data.router, prefix="/api/v1/data", tags=["data"])
+    print("✅ DEBUG: data router included")
+except Exception as e:
+    print(f"❌ DEBUG: data router inclusion failed: {e}")
+
+try:
+    app.include_router(backtest.router, prefix="/api/v1/backtest", tags=["backtesting"])
+    print("✅ DEBUG: backtest router included")
+except Exception as e:
+    print(f"❌ DEBUG: backtest router inclusion failed: {e}")
+
+try:
+    app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
+    print("✅ DEBUG: risk router included")
+except Exception as e:
+    print(f"❌ DEBUG: risk router inclusion failed: {e}")
+
+try:
+    app.include_router(trade.router, prefix="/api/v1/trade", tags=["trading"])
+    print("✅ DEBUG: trade router included")
+except Exception as e:
+    print(f"❌ DEBUG: trade router inclusion failed: {e}")
+
+try:
+    app.include_router(chat.router, prefix="/api/v1/ai", tags=["data-context"])
+    print("✅ DEBUG: chat router included")
+except Exception as e:
+    print(f"❌ DEBUG: chat router inclusion failed: {e}")
+
+try:
+    app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
+    print("✅ DEBUG: websocket router included")
+except Exception as e:
+    print(f"❌ DEBUG: websocket router inclusion failed: {e}")
+
+try:
+    app.include_router(llm_proxy.router, prefix="/api/v1", tags=["llm-proxy"])
+    print("✅ DEBUG: llm_proxy router included")
+except Exception as e:
+    print(f"❌ DEBUG: llm_proxy router inclusion failed: {e}")
 
 
 @app.get("/")
