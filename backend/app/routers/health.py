@@ -10,6 +10,7 @@ router = APIRouter()
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Check server health status."""
+    print("🚀 DEBUG: Health check endpoint called from backend/app/routers/health.py")
     return HealthResponse(
         status="healthy",
         timestamp=datetime.utcnow()

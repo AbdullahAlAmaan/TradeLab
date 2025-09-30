@@ -1,6 +1,7 @@
 """Main FastAPI application."""
 
 print("🚀 DEBUG: Starting main.py execution")
+print("🚀 DEBUG: This is the ROOT main.py file")
 print("🚀 DEBUG: Importing FastAPI...")
 
 from fastapi import FastAPI
@@ -11,8 +12,10 @@ from app.config import settings
 from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket
 
 print("🚀 DEBUG: All imports successful")
+print("🚀 DEBUG: About to create FastAPI app")
 
 # Create FastAPI application
+print("🚀 DEBUG: Creating FastAPI app...")
 app = FastAPI(
     title="TradeLab API",
     description="A comprehensive trading platform with backtesting, risk analysis, and paper trading",
@@ -20,6 +23,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+print("🚀 DEBUG: FastAPI app created successfully")
 
 # Add CORS middleware
 app.add_middleware(
@@ -52,12 +56,15 @@ app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
 async def root():
     """Root endpoint."""
     print("🚀 DEBUG: Root endpoint called - version should be 1.0.2")
+    print("🚀 DEBUG: This is the main.py file in root directory")
     return {
         "message": "Welcome to TradeLab API",
         "version": "1.0.2",
         "docs": "/docs",
-        "status": "deployed_on_railway_with_numpy_fix",
-        "debug": "This is the root main.py file"
+        "status": "deployed_on_railway_debug_v2",
+        "debug": "This is the root main.py file",
+        "timestamp": "2025-09-30T18:30:00Z",
+        "file_location": "root/main.py"
     }
 
 @app.get("/test")
@@ -71,8 +78,11 @@ async def test():
 
 # For Railway deployment
 if __name__ == "__main__":
+    print("🚀 DEBUG: Starting uvicorn server...")
     import uvicorn
     import os
     port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 DEBUG: Starting server on port {port}")
+    print(f"🚀 DEBUG: Environment variables: PORT={os.environ.get('PORT', 'NOT_SET')}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
