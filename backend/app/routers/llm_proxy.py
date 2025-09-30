@@ -1,6 +1,7 @@
 """
 LLM Proxy Router - Forwards requests to Ollama running on a server.
 This allows the Vercel frontend to use AI features even when deployed.
+Updated: 2025-09-30 - Force Railway redeploy
 """
 
 import httpx
