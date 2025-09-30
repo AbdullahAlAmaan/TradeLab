@@ -148,8 +148,11 @@ async def _get_portfolio_context(user_id: str, portfolio_id: Optional[str], db: 
                             "market_value": asset_value,
                             "weight_percent": 0,  # Will calculate after total
                             "sector": "Technology" if asset.asset_type == "stock" else "Cryptocurrency",
-                        "risk_level": "Medium" if asset.asset_type == "stock" else "High"
-                    })
+                            "risk_level": "Medium" if asset.asset_type == "stock" else "High"
+                        })
+                    except:
+                        # If individual asset fails, skip it
+                        continue
                 
                 # Calculate weights and diversification metrics
                 for asset in enhanced_assets:
