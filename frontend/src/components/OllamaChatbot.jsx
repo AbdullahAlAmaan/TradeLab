@@ -13,7 +13,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     {
       id: 1,
       type: 'assistant',
-      content: "Hi! I'm your portfolio AI assistant. Ask me about your investments, trading strategies, or any financial questions.",
+      content: "Hi! I'm your portfolio AI assistant. I can help you analyze your investments and trading strategies.\n\n**Note:** For AI-powered responses, run the app locally with `npm run dev`. For now, I can still provide portfolio insights using your real data!",
       timestamp: new Date()
     }
   ])
@@ -83,6 +83,38 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
       console.error('Error details:', error.message)
       setConnectionStatus('disconnected')
       return false
+    }
+  }
+
+  const provideBasicPortfolioAnalysis = async (userQuery) => {
+    try {
+      // Get portfolio context from backend
+      const token = localStorage.getItem('supabase.auth.token')
+      if (!token) {
+        return "I'd love to help analyze your portfolio! Please log in to access your portfolio data.\n\n**To use AI features:** Run `npm run dev` locally and ensure Ollama is running."
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
+      const response = await fetch(`${apiUrl}/api/v1/ai/context`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          context_type: 'portfolio'
+        }),
+        signal: AbortSignal.timeout(5000)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return `**Portfolio Analysis (Basic):**\n\nI can see your portfolio data, but for detailed AI analysis, please run the app locally with \`npm run dev\`.\n\n**Your Portfolio:**\n- Total Value: $${data.portfolio?.basic_info?.total_value || 'Loading...'}\n- Assets: ${data.portfolio?.basic_info?.total_assets || 'Loading...'}\n\n**For AI-powered insights:** Run locally with Ollama running!`
+      } else {
+        return "I'd love to help analyze your portfolio! Please log in to access your portfolio data.\n\n**To use AI features:** Run `npm run dev` locally and ensure Ollama is running."
+      }
+    } catch (error) {
+      return "I'd love to help analyze your portfolio! Please log in to access your portfolio data.\n\n**To use AI features:** Run `npm run dev` locally and ensure Ollama is running."
     }
   }
 
@@ -168,13 +200,15 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     // Test connection first
     const isConnected = await testOllamaConnection()
     if (!isConnected) {
-      const errorMessage = {
+      // Provide basic portfolio analysis without Ollama
+      const basicAnalysis = await provideBasicPortfolioAnalysis(originalMessage)
+      const helpMessage = {
         id: Date.now(),
-        type: 'system',
-        content: "⚠️ Cannot connect to Ollama. This is likely a CORS issue.\n\n**Solutions:**\n1. **If using Vercel**: Ollama runs on your local machine, but Vercel can't access localhost\n2. **Try local development**: Run `npm run dev` locally to test the chatbot\n3. **Check Ollama**: Make sure Ollama is running with `ollama serve`\n4. **Check console**: Open browser dev tools to see detailed error messages\n\n**Current settings:** " + ollamaSettings.host,
+        type: 'assistant',
+        content: basicAnalysis,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => [...prev, helpMessage])
       return
     }
 
