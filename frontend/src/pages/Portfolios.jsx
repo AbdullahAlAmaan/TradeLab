@@ -150,7 +150,9 @@ const Portfolios = () => {
         asset_type: newAsset.asset_type,
         name: newAsset.symbol, // Use symbol as name for now
         exchange: newAsset.asset_type === 'stock' ? 'NASDAQ' : 'BINANCE',
-        portfolio_id: selectedPortfolio.id
+        portfolio_id: selectedPortfolio.id,
+        quantity: newAsset.quantity || 1, // Default to 1 if not specified
+        purchase_price: newAsset.purchase_price || 0
       })
       
       console.log('Asset created successfully:', response.data)
@@ -203,16 +205,21 @@ const Portfolios = () => {
   const calculatePortfolioValue = async () => {
     // Calculate real portfolio value by fetching current prices
     if (!selectedPortfolio || assets.length === 0) {
+      console.log('No portfolio or assets to calculate value for')
       setPortfolioValue(0)
       setPortfolioChange(0)
       return
     }
+    
+    console.log('Calculating portfolio value for assets:', assets)
     
     try {
       let totalValue = 0
       let totalChange = 0
       
       for (const asset of assets) {
+        console.log(`Fetching data for ${asset.symbol} (${asset.asset_type}), quantity: ${asset.quantity}`)
+        
         // Fetch current price for each asset
         const response = await dataAPI.fetchData({
           symbol: asset.symbol,
@@ -220,19 +227,28 @@ const Portfolios = () => {
           days: 1
         })
         
+        console.log(`Data response for ${asset.symbol}:`, response.data)
+        
         if (response.data && response.data.data_preview) {
           const currentPrice = response.data.data_preview.last_price
           const previousPrice = response.data.data_preview.previous_close || currentPrice
           const change = currentPrice - previousPrice
           
-          // Use actual asset quantity
-          const assetValue = currentPrice * asset.quantity
-          const assetChange = change * asset.quantity
+          // Use actual asset quantity (default to 1 if not set)
+          const quantity = asset.quantity || 1
+          const assetValue = currentPrice * quantity
+          const assetChange = change * quantity
+          
+          console.log(`${asset.symbol}: price=${currentPrice}, quantity=${quantity}, value=${assetValue}`)
           
           totalValue += assetValue
           totalChange += assetChange
+        } else {
+          console.log(`No data preview for ${asset.symbol}`)
         }
       }
+      
+      console.log(`Final portfolio value: ${totalValue}, change: ${totalChange}`)
       
       setPortfolioValue(totalValue)
       setPortfolioChange(totalChange)
