@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     ai_enabled: bool = True
     
     # Application Configuration
-    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174,https://trade-lab-mu.vercel.app"
     allowed_hosts: List[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
     
     # Security Configuration
