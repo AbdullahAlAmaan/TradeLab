@@ -208,7 +208,7 @@ async def run_backtest(
             returns = pd.Series([eq['equity'] for eq in equity_curve]).pct_change().dropna()
             mean_return = float(returns.mean())
             std_return = float(returns.std())
-            sharpe_ratio = float(mean_return / std_return * np.sqrt(252)) if std_return > 0 else 0.0
+            sharpe_ratio = float(mean_return / std_return * float(np.sqrt(252))) if std_return > 0 else 0.0
         else:
             sharpe_ratio = 0.0
         
@@ -238,6 +238,12 @@ async def run_backtest(
                     continue
         
         win_rate = float(winning_trades / total_trades) if total_trades > 0 else 0.0
+        
+        # Debug: Check types before creating result
+        print(f"DEBUG - sharpe_ratio type: {type(sharpe_ratio)}, value: {sharpe_ratio}")
+        print(f"DEBUG - max_drawdown type: {type(max_drawdown)}, value: {max_drawdown}")
+        print(f"DEBUG - win_rate type: {type(win_rate)}, value: {win_rate}")
+        print(f"DEBUG - total_trades type: {type(total_trades)}, value: {total_trades}")
         
         # Create backtest result
         backtest_result = BacktestResultModel(
