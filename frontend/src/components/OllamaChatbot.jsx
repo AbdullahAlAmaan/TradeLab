@@ -5,14 +5,7 @@ import {
   Minimize2, 
   Settings, 
   User, 
-  Bot,
-  AlertCircle,
-  CheckCircle,
-  RefreshCw,
-  Zap,
-  Brain,
-  Wifi,
-  WifiOff
+  Bot
 } from 'lucide-react'
 
 const OllamaChatbot = ({ isOpen, onToggle }) => {
@@ -20,7 +13,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     {
       id: 1,
       type: 'assistant',
-      content: "🎯 **Welcome to your Enhanced Portfolio AI Assistant!**\n\nI'm powered by **WizardLM2** running locally on your machine for complete privacy. Here's what I can do:\n\n📊 **Smart Portfolio Analysis** - I automatically detect when you ask about your investments and pull real-time data\n🔍 **Trading Strategy Insights** - Analyze your backtests and trading performance\n📈 **Market Intelligence** - Get personalized advice based on your actual holdings\n💡 **Financial Education** - Explain complex concepts in simple terms\n\n**Try asking:**\n• \"Analyze my portfolio diversification\"\n• \"How is my portfolio performing?\"\n• \"What's my biggest risk exposure?\"\n• \"Should I rebalance my holdings?\"\n\n*✨ I automatically include your portfolio data when relevant - no need for special commands!*",
+      content: "Hi! I'm your portfolio AI assistant. Ask me about your investments, trading strategies, or any financial questions.",
       timestamp: new Date()
     }
   ])
@@ -31,7 +24,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     host: import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434',
     model: import.meta.env.VITE_OLLAMA_MODEL || 'wizardlm2:latest'
   })
-  const [connectionStatus, setConnectionStatus] = useState('unknown') // unknown, connected, disconnected
+  const [connectionStatus, setConnectionStatus] = useState('unknown')
   const messagesEndRef = useRef(null)
   const abortControllerRef = useRef(null)
 
@@ -190,12 +183,12 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     setInputMessage('')
     setIsLoading(true)
 
-    // Add loading message with context detection
+    // Add loading message
     const loadingMessageId = Date.now() + 1
     setMessages(prev => [...prev, { 
       id: loadingMessageId, 
       type: 'assistant', 
-      content: '🧠 Analyzing your question and gathering relevant portfolio data...', 
+      content: 'Thinking...', 
       timestamp: new Date() 
     }])
 
@@ -378,35 +371,14 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
     }
   }
 
-  const getConnectionStatusIcon = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return <Wifi className="h-4 w-4 text-green-500" />
-      case 'disconnected':
-        return <WifiOff className="h-4 w-4 text-red-500" />
-      default:
-        return <RefreshCw className="h-4 w-4 text-gray-400 animate-spin" />
-    }
-  }
-
-  const getConnectionStatusText = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return `Connected to ${ollamaSettings.model}`
-      case 'disconnected':
-        return 'Ollama not running'
-      default:
-        return 'Checking connection...'
-    }
-  }
 
   if (!isOpen) {
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 z-50"
+        className="fixed bottom-6 right-6 w-12 h-12 bg-blue-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 z-50"
       >
-        <Brain className="h-6 w-6" />
+        <MessageCircle className="h-5 w-5" />
       </button>
     )
   }
@@ -426,31 +398,23 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
   return (
     <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 rounded-t-2xl flex items-center justify-between">
+      <div className="bg-gray-800 text-white p-4 rounded-t-2xl flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="font-semibold">Local AI Assistant</h3>
-            <div className="flex items-center space-x-1 text-xs opacity-90">
-              {getConnectionStatusIcon()}
-              <span>{getConnectionStatusText()}</span>
-            </div>
-          </div>
+          <MessageCircle className="h-5 w-5" />
+          <h3 className="font-semibold">AI Assistant</h3>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowSettings(true)}
             className="text-white/80 hover:text-white transition-colors"
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-4 w-4" />
           </button>
           <button
             onClick={onToggle}
             className="text-white/80 hover:text-white transition-colors"
           >
-            <Minimize2 className="h-5 w-5" />
+            <Minimize2 className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -460,56 +424,23 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex items-start space-x-2 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                 message.type === 'user' 
                   ? 'bg-blue-500 text-white' 
-                  : message.type === 'system'
-                  ? 'bg-orange-500 text-white'
-                  : message.contextUsed
-                  ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white'
-                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                  : 'bg-gray-500 text-white'
               }`}>
                 {message.type === 'user' ? (
-                  <User className="h-4 w-4" />
-                ) : message.type === 'system' ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : message.contextUsed ? (
-                  <Zap className="h-4 w-4" />
+                  <User className="h-3 w-3" />
                 ) : (
-                  <Brain className="h-4 w-4" />
+                  <Bot className="h-3 w-3" />
                 )}
               </div>
-              <div className={`rounded-2xl p-3 ${
+              <div className={`rounded-lg p-3 ${
                 message.type === 'user'
                   ? 'bg-blue-500 text-white'
-                  : message.type === 'system'
-                  ? 'bg-orange-50 text-orange-800 border border-orange-200'
-                  : message.contextUsed
-                  ? 'bg-gradient-to-r from-green-50 to-blue-50 text-gray-800 border border-green-200'
                   : 'bg-gray-100 text-gray-800'
               }`}>
-                {/* Context indicator */}
-                {message.contextUsed && message.contextTypes && (
-                  <div className="mb-2 flex items-center text-xs">
-                    <Zap className="w-3 h-3 text-green-600 mr-1" />
-                    <span className="text-green-700 font-medium">
-                      📊 Enhanced with: {message.contextTypes.join(', ')} data
-                    </span>
-                  </div>
-                )}
-                
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                
-                {message.isStreaming && (
-                  <div className="mt-2 flex items-center text-xs opacity-75">
-                    <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-                    Generating...
-                  </div>
-                )}
-                
-                <div className="mt-1 text-xs opacity-60">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </div>
               </div>
             </div>
           </div>
@@ -520,58 +451,22 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
 
       {/* Input */}
       <div className="p-4 border-t border-gray-200 rounded-b-2xl">
-        {/* Smart Context Info */}
-        <div className="mb-3 p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-          <div className="flex items-center text-xs text-blue-700">
-            <Zap className="w-3 h-3 mr-1" />
-            <span className="font-medium">Smart RAG Active:</span>
-            <span className="ml-1">I automatically analyze your portfolio data when relevant</span>
-          </div>
-        </div>
-        
         <div className="flex space-x-2">
-          <div className="flex-1 relative">
-            <textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about your portfolio, trading, or finance... (Shift+Enter for new line, Ctrl+Shift+Enter for full context)"
-              className="w-full resize-none border border-gray-300 rounded-xl px-3 py-2 pr-20 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-              rows="2"
-              disabled={isLoading}
-            />
-            
-            {/* Force Full Context Button */}
-            <button
-              onClick={() => sendMessage(true)}
-              disabled={!inputMessage.trim() || isLoading}
-              className="absolute right-12 bottom-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg p-1.5 transition-colors"
-              title="Force Full Context - Include all portfolio, backtest, trading, and market data"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </button>
-            
-            <div className="absolute bottom-2 right-2">
-              <Zap className="h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-          <div className="flex flex-col space-y-1">
-            <button
-              onClick={() => sendMessage()}
-              disabled={!inputMessage.trim() || isLoading}
-              className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-2 rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-            {isLoading && (
-              <button
-                onClick={cancelMessage}
-                className="bg-red-500 text-white p-2 rounded-xl hover:bg-red-600 transition-colors"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          <input
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask about your portfolio or trading..."
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            disabled={isLoading}
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={!inputMessage.trim() || isLoading}
+            className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
