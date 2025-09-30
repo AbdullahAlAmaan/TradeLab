@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 print("🚀 DEBUG: Importing app modules...")
 from app.config import settings
-from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket
+from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket, llm_proxy
 
 print("🚀 DEBUG: All imports successful")
 print("🚀 DEBUG: About to create FastAPI app")
@@ -50,6 +50,7 @@ app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
 app.include_router(trade.router, prefix="/api/v1/trade", tags=["trading"])
 app.include_router(chat.router, prefix="/api/v1/ai", tags=["data-context"])
 app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
+app.include_router(llm_proxy.router, prefix="/api/v1", tags=["llm-proxy"])
 
 
 @app.get("/")

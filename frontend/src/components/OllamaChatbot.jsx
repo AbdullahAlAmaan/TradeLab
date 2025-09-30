@@ -60,24 +60,44 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
 
   const testOllamaConnection = async (settings = ollamaSettings) => {
     try {
-      console.log('Testing Ollama connection to:', settings.host)
-      const response = await fetch(`${settings.host}/api/tags`, {
+      // First try the proxy endpoint (for production)
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
+      console.log('Testing Ollama connection via proxy:', `${apiUrl}/api/v1/llm/health`)
+      
+      const response = await fetch(`${apiUrl}/api/v1/llm/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000) // 5 second timeout
       })
       
-      console.log('Ollama response status:', response.status)
+      console.log('Proxy response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Ollama models available:', data.models?.map(m => m.name))
+        console.log('Ollama via proxy - status:', data.status)
+        if (data.status === 'healthy') {
+          setConnectionStatus('connected')
+          return true
+        }
+      }
+      
+      // Fallback: try direct connection (for local development)
+      console.log('Trying direct Ollama connection to:', settings.host)
+      const directResponse = await fetch(`${settings.host}/api/tags`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      })
+      
+      if (directResponse.ok) {
+        const data = await directResponse.json()
+        console.log('Direct Ollama models available:', data.models?.map(m => m.name))
         setConnectionStatus('connected')
         return true
-      } else {
-        console.log('Ollama response not ok:', response.status, response.statusText)
-        setConnectionStatus('disconnected')
-        return false
       }
+      
+      console.log('Both proxy and direct connection failed')
+      setConnectionStatus('disconnected')
+      return false
+      
     } catch (error) {
       console.error('Ollama connection test failed:', error)
       console.error('Error details:', error.message)
@@ -269,9 +289,10 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         isStreaming: true
       }])
 
-      // Stream response from Ollama with enhanced prompt
+      // Stream response from Ollama via proxy
       abortControllerRef.current = new AbortController()
-      const response = await fetch(`${ollamaSettings.host}/api/generate`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
+      const response = await fetch(`${apiUrl}/api/v1/llm/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -364,9 +385,10 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         }
         setMessages(prev => [...prev, errorMessage])
         
-        // Fallback: try simple prompt without context
+        // Fallback: try simple prompt without context via proxy
         try {
-          const fallbackResponse = await fetch(`${ollamaSettings.host}/api/generate`, {
+          const apiUrl = import.meta.env.VITE_API_URL || 'https://tradelab-production.up.railway.app'
+          const fallbackResponse = await fetch(`${apiUrl}/api/v1/llm/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
