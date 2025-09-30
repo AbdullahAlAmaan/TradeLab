@@ -237,6 +237,36 @@ async def run_backtest(
         
         win_rate = winning_trades / total_trades if total_trades > 0 else 0
         
+        # Force convert all values to ensure they're Python native types
+        # This is a critical fix for numpy type conversion
+        print(f"🚀 DEBUG: Converting numpy types - sharpe_ratio: {type(sharpe_ratio)} = {sharpe_ratio}")
+        print(f"🚀 DEBUG: Converting numpy types - max_drawdown: {type(max_drawdown)} = {max_drawdown}")
+        print(f"🚀 DEBUG: Converting numpy types - win_rate: {type(win_rate)} = {win_rate}")
+        print(f"🚀 DEBUG: Converting numpy types - total_trades: {type(total_trades)} = {total_trades}")
+        
+        # Convert numpy types to Python native types
+        import numpy as np
+        if isinstance(sharpe_ratio, np.floating):
+            sharpe_ratio = float(sharpe_ratio)
+            print(f"🚀 DEBUG: Converted sharpe_ratio to float: {sharpe_ratio}")
+        if isinstance(max_drawdown, np.floating):
+            max_drawdown = float(max_drawdown)
+            print(f"🚀 DEBUG: Converted max_drawdown to float: {max_drawdown}")
+        if isinstance(win_rate, np.floating):
+            win_rate = float(win_rate)
+            print(f"🚀 DEBUG: Converted win_rate to float: {win_rate}")
+        if isinstance(total_trades, np.integer):
+            total_trades = int(total_trades)
+            print(f"🚀 DEBUG: Converted total_trades to int: {total_trades}")
+        if isinstance(final_value, np.floating):
+            final_value = float(final_value)
+            print(f"🚀 DEBUG: Converted final_value to float: {final_value}")
+        if isinstance(total_return, np.floating):
+            total_return = float(total_return)
+            print(f"🚀 DEBUG: Converted total_return to float: {total_return}")
+        
+        print(f"🚀 DEBUG: Final types - sharpe_ratio: {type(sharpe_ratio)}, max_drawdown: {type(max_drawdown)}, win_rate: {type(win_rate)}, total_trades: {type(total_trades)}")
+        
         # Create backtest result
         backtest_result = BacktestResultModel(
             id=uuid.uuid4(),

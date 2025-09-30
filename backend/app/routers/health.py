@@ -22,7 +22,7 @@ async def detailed_health_check():
     health_status = {
         "status": "healthy",
         "timestamp": datetime.utcnow(),
-        "version": "1.0.0",
+        "version": "1.0.2",
         "services": {
             "database": "unknown",
             "supabase": "unknown",
