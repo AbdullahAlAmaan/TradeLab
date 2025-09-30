@@ -1,5 +1,7 @@
 """Backtesting endpoints using Backtrader."""
 
+print("🚀 DEBUG: Loading backtest router...")
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -13,7 +15,9 @@ import numpy as np
 from typing import List, Dict, Any
 import uuid
 
+print("🚀 DEBUG: Creating backtest router...")
 router = APIRouter()
+print("🚀 DEBUG: Backtest router created successfully")
 
 
 class MovingAverageCrossoverStrategy(bt.Strategy):
@@ -85,6 +89,9 @@ async def run_backtest(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    print("🚀 DEBUG: run_backtest function called")
+    print(f"🚀 DEBUG: Request: {request}")
+    print(f"🚀 DEBUG: Current user: {current_user}")
     """Run a backtest for the given parameters."""
     try:
         # Calculate the date range for data fetching (ensure we have enough data for backtesting)
@@ -247,7 +254,9 @@ async def run_backtest(
         print("🚀 RAILWAY DEPLOYMENT TEST - About to convert numpy types")
         
         # Import numpy conversion utilities
+        print("🚀 DEBUG: About to import numpy_fix utilities")
         from app.numpy_fix import safe_float, safe_int
+        print("🚀 DEBUG: Successfully imported numpy_fix utilities")
         
         # Force convert all values to ensure they're Python native types
         # This is a critical fix for numpy type conversion

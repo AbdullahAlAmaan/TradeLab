@@ -3,7 +3,9 @@ Numpy type conversion utilities for database compatibility.
 This file forces Railway to rebuild and ensures numpy types are converted.
 """
 
+print("🚀 DEBUG: Loading numpy_fix.py...")
 import numpy as np
+print("🚀 DEBUG: numpy_fix.py loaded successfully")
 
 def convert_numpy_types(obj):
     """Convert numpy types to Python native types for database compatibility."""
@@ -22,11 +24,16 @@ def convert_numpy_types(obj):
 
 def safe_float(value):
     """Safely convert any value to float, handling numpy types."""
+    print(f"🚀 DEBUG: safe_float called with value: {value}, type: {type(value)}")
     if value is None:
         return 0.0
     if isinstance(value, np.floating):
-        return float(value)
-    return float(value)
+        result = float(value)
+        print(f"🚀 DEBUG: Converted numpy float {value} to {result}")
+        return result
+    result = float(value)
+    print(f"🚀 DEBUG: Converted {value} to {result}")
+    return result
 
 def safe_int(value):
     """Safely convert any value to int, handling numpy types."""
