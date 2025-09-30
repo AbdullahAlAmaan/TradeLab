@@ -20,4 +20,6 @@ alpaca-py==0.20.0
 python-dotenv==1.0.0
 pydantic==2.11.9
 pydantic-settings==2.1.0
+websockets>=12.0
+realtime>=1.0.6,<2.0.0
 
