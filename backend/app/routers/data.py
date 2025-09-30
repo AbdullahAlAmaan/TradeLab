@@ -123,39 +123,10 @@ async def _fetch_stock_data(request: DataFetchRequest, db: Session = None):
                             raise Exception(f"All methods failed. Last error: {e5}")
         
         if data is None or data.empty:
-            # Create more realistic mock data for testing with sufficient data points
-            print(f"Creating mock data for {request.symbol}")
-            import numpy as np
-            
-            # Ensure we have enough data points for backtesting (at least 60 days)
-            min_days = max(request.days, 60)
-            dates = pd.date_range(start=start_date, end=end_date, freq='D')
-            if len(dates) < min_days:
-                # Extend the date range to ensure sufficient data
-                extended_start = end_date - timedelta(days=min_days)
-                dates = pd.date_range(start=extended_start, end=end_date, freq='D')
-            
-            # Create more realistic price movement
-            base_price = 150.0  # Mock base price
-            np.random.seed(42)  # For reproducible results
-            daily_returns = np.random.normal(0.001, 0.02, len(dates))  # 0.1% daily return, 2% volatility
-            prices = base_price * np.exp(np.cumsum(daily_returns))
-            
-            # Add some trend and volatility
-            trend = np.linspace(0, 0.1, len(dates))  # 10% upward trend over period
-            prices = prices * (1 + trend)
-            
-            data = pd.DataFrame({
-                'Open': prices,
-                'High': prices * (1 + np.abs(np.random.normal(0, 0.01, len(dates)))),
-                'Low': prices * (1 - np.abs(np.random.normal(0, 0.01, len(dates)))),
-                'Close': prices + np.random.normal(0, 0.5, len(dates)),
-                'Volume': np.random.randint(1000000, 10000000, len(dates))
-            }, index=dates)
-            
-            # Ensure High >= Low and High >= Close >= Low
-            data['High'] = np.maximum(data['High'], data[['Open', 'Close']].max(axis=1))
-            data['Low'] = np.minimum(data['Low'], data[['Open', 'Close']].min(axis=1))
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data available for {request.symbol} ({request.asset_type}). Please check the symbol and try again."
+            )
         
         print(f"Retrieved {len(data)} data points for {request.symbol}")
         
@@ -260,25 +231,10 @@ async def _fetch_crypto_data(request: DataFetchRequest, db: Session = None):
                 continue
         
         if not klines:
-            # Create mock crypto data
-            print(f"Creating mock crypto data for {request.symbol}")
-            import numpy as np
-            dates = pd.date_range(start=datetime.now() - timedelta(days=request.days), 
-                                end=datetime.now(), freq='D')
-            base_price = 50000.0  # Mock base price for crypto
-            prices = base_price + np.random.normal(0, 1000, len(dates)).cumsum()
-            
-            klines = []
-            for i, date in enumerate(dates):
-                price = prices[i]
-                klines.append([
-                    int(date.timestamp() * 1000),  # timestamp
-                    str(price),  # open
-                    str(price + np.random.uniform(0, 500)),  # high
-                    str(price - np.random.uniform(0, 500)),  # low
-                    str(price + np.random.normal(0, 100)),  # close
-                    str(np.random.randint(1000000, 10000000)),  # volume
-                ])
+            raise HTTPException(
+                status_code=404,
+                detail=f"No crypto data available for {request.symbol}. Please check the symbol and try again."
+            )
         
         print(f"Retrieved {len(klines)} data points for {request.symbol}")
         

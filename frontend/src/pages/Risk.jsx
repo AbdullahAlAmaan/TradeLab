@@ -134,13 +134,7 @@ const Risk = () => {
               <Shield className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Portfolio Selected</h3>
-            <p className="text-gray-600 mb-6">Select a portfolio to analyze its risk metrics</p>
-            <button
-              onClick={() => window.location.href = '/portfolios'}
-              className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-xl font-medium hover:from-orange-600 hover:to-red-700 transition-all duration-300"
-            >
-              Go to Portfolios
-            </button>
+            <p className="text-gray-600">Select a portfolio from the dropdown above to analyze its risk metrics</p>
           </div>
         ) : (
           <div className="space-y-8">

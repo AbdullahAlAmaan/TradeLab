@@ -49,7 +49,7 @@ async def root():
         "message": "Welcome to TradeLab API",
         "version": "1.0.2",
         "docs": "/docs",
-        "status": "deployed_on_vercel"
+        "status": "RAILWAY_DEBUG_TEST_12345"
     }
 
 @app.get("/test")

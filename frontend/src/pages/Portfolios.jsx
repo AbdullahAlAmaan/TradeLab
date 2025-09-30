@@ -86,8 +86,12 @@ const Portfolios = () => {
                 const previousPrice = response.data.data_preview.previous_close || currentPrice
                 const change = currentPrice - previousPrice
                 
-                totalValue += currentPrice
-                totalChange += change
+                // Use actual asset quantity
+                const assetValue = currentPrice * asset.quantity
+                const assetChange = change * asset.quantity
+                
+                totalValue += assetValue
+                totalChange += assetChange
               }
             } catch (error) {
               console.error(`Error fetching data for ${asset.symbol}:`, error)
@@ -221,9 +225,12 @@ const Portfolios = () => {
           const previousPrice = response.data.data_preview.previous_close || currentPrice
           const change = currentPrice - previousPrice
           
-          // For now, assume 1 unit of each asset (in real app, you'd track quantities)
-          totalValue += currentPrice
-          totalChange += change
+          // Use actual asset quantity
+          const assetValue = currentPrice * asset.quantity
+          const assetChange = change * asset.quantity
+          
+          totalValue += assetValue
+          totalChange += assetChange
         }
       }
       

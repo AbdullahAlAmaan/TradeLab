@@ -100,33 +100,54 @@ async def _get_portfolio_context(user_id: str, portfolio_id: Optional[str], db: 
                     Asset.portfolio_id == portfolio_id
                 ).all()
                 
-                # Enhanced asset data with mock financial metrics (since DB connection issues)
+                # Enhanced asset data with real financial metrics
                 enhanced_assets = []
                 total_portfolio_value = 0
                 asset_types = {}
                 
                 for asset in assets:
-                    # Mock current price calculation (replace with real data when DB works)
-                    mock_current_price = 100.0  # This should come from AssetPrice table
-                    asset_value = mock_current_price * 1.0  # Mock quantity
-                    total_portfolio_value += asset_value
-                    
-                    # Track asset types for diversification analysis
-                    if asset.asset_type not in asset_types:
-                        asset_types[asset.asset_type] = {"count": 0, "value": 0}
-                    asset_types[asset.asset_type]["count"] += 1
-                    asset_types[asset.asset_type]["value"] += asset_value
-                    
-                    enhanced_assets.append({
-                        "symbol": asset.symbol,
-                        "name": asset.name,
-                        "type": asset.asset_type,
-                        "exchange": asset.exchange,
-                        "current_price": mock_current_price,
-                        "quantity": 1.0,  # Mock quantity
-                        "market_value": asset_value,
-                        "weight_percent": 0,  # Will calculate after total
-                        "sector": "Technology" if asset.asset_type == "stock" else "Cryptocurrency",
+                    try:
+                        # Get real current price from data API
+                        from app.routers.data import fetch_data
+                        from app.schemas import DataFetchRequest
+                        
+                        data_request = DataFetchRequest(
+                            symbol=asset.symbol,
+                            asset_type=asset.asset_type,
+                            days=1
+                        )
+                        
+                        # Get current price from latest data
+                        current_price = 100.0  # Default fallback
+                        try:
+                            data_response = fetch_data(data_request, db)
+                            if data_response and hasattr(data_response, 'data_preview'):
+                                current_price = data_response.data_preview.last_price
+                        except:
+                            # If data fetch fails, use a reasonable default
+                            current_price = 100.0
+                        
+                        # Get actual quantity from asset
+                        quantity = getattr(asset, 'quantity', 1.0)
+                        asset_value = current_price * quantity
+                        total_portfolio_value += asset_value
+                        
+                        # Track asset types for diversification analysis
+                        if asset.asset_type not in asset_types:
+                            asset_types[asset.asset_type] = {"count": 0, "value": 0}
+                        asset_types[asset.asset_type]["count"] += 1
+                        asset_types[asset.asset_type]["value"] += asset_value
+                        
+                        enhanced_assets.append({
+                            "symbol": asset.symbol,
+                            "name": asset.name,
+                            "type": asset.asset_type,
+                            "exchange": asset.exchange,
+                            "current_price": current_price,
+                            "quantity": quantity,
+                            "market_value": asset_value,
+                            "weight_percent": 0,  # Will calculate after total
+                            "sector": "Technology" if asset.asset_type == "stock" else "Cryptocurrency",
                         "risk_level": "Medium" if asset.asset_type == "stock" else "High"
                     })
                 
@@ -173,7 +194,33 @@ async def _get_portfolio_context(user_id: str, portfolio_id: Optional[str], db: 
             
             for p in portfolios:
                 assets = db.query(Asset).filter(Asset.portfolio_id == p.id).all()
-                portfolio_value = len(assets) * 100.0  # Mock calculation
+                # Calculate real portfolio value
+                portfolio_value = 0.0
+                for asset in assets:
+                    try:
+                        # Get real current price
+                        from app.routers.data import fetch_data
+                        from app.schemas import DataFetchRequest
+                        
+                        data_request = DataFetchRequest(
+                            symbol=asset.symbol,
+                            asset_type=asset.asset_type,
+                            days=1
+                        )
+                        
+                        current_price = 100.0  # Default fallback
+                        try:
+                            data_response = fetch_data(data_request, db)
+                            if data_response and hasattr(data_response, 'data_preview'):
+                                current_price = data_response.data_preview.last_price
+                        except:
+                            current_price = 100.0
+                        
+                        quantity = getattr(asset, 'quantity', 1.0)
+                        portfolio_value += current_price * quantity
+                    except:
+                        # If individual asset fails, skip it
+                        continue
                 total_assets_across_portfolios += len(assets)
                 
                 portfolio_summaries.append({
@@ -197,98 +244,10 @@ async def _get_portfolio_context(user_id: str, portfolio_id: Optional[str], db: 
     
     except Exception as e:
         logger.error(f"Error getting portfolio context: {e}")
-        # Provide comprehensive mock data for demo
+        # Return empty context if database error
         context_data = {
-            "portfolio_demo": {
-                "note": "Demo data - connect database for real portfolio analysis",
-                "basic_info": {
-                    "name": "Growth Portfolio",
-                    "total_value": 50000,
-                    "total_assets": 5,
-                    "created": "2024-01-15"
-                },
-                "asset_breakdown": [
-                    {
-                        "symbol": "AAPL",
-                        "name": "Apple Inc.",
-                        "type": "stock",
-                        "current_price": 175.50,
-                        "quantity": 50,
-                        "market_value": 8775,
-                        "weight_percent": 17.6,
-                        "sector": "Technology",
-                        "risk_level": "Medium",
-                        "performance": "+12.5% YTD"
-                    },
-                    {
-                        "symbol": "TSLA", 
-                        "name": "Tesla Inc.",
-                        "type": "stock",
-                        "current_price": 220.30,
-                        "quantity": 25,
-                        "market_value": 5507,
-                        "weight_percent": 11.0,
-                        "sector": "Automotive",
-                        "risk_level": "High",
-                        "performance": "-8.2% YTD"
-                    },
-                    {
-                        "symbol": "BTC",
-                        "name": "Bitcoin",
-                        "type": "crypto",
-                        "current_price": 42000,
-                        "quantity": 0.5,
-                        "market_value": 21000,
-                        "weight_percent": 42.0,
-                        "sector": "Cryptocurrency",
-                        "risk_level": "Very High",
-                        "performance": "+25.8% YTD"
-                    },
-                    {
-                        "symbol": "SPY",
-                        "name": "SPDR S&P 500 ETF",
-                        "type": "etf",
-                        "current_price": 445.20,
-                        "quantity": 20,
-                        "market_value": 8904,
-                        "weight_percent": 17.8,
-                        "sector": "Broad Market",
-                        "risk_level": "Low",
-                        "performance": "+8.9% YTD"
-                    },
-                    {
-                        "symbol": "NVDA",
-                        "name": "NVIDIA Corp",
-                        "type": "stock", 
-                        "current_price": 875.30,
-                        "quantity": 7,
-                        "market_value": 6127,
-                        "weight_percent": 12.3,
-                        "sector": "Technology",
-                        "risk_level": "High",
-                        "performance": "+45.2% YTD"
-                    }
-                ],
-                "diversification_analysis": {
-                    "diversification_score": 0.8,
-                    "concentration_risk": 42.0,
-                    "risk_assessment": "High concentration in crypto",
-                    "sector_breakdown": {
-                        "Technology": 29.9,
-                        "Cryptocurrency": 42.0,
-                        "Automotive": 11.0,
-                        "Broad Market": 17.8
-                    }
-                },
-                "performance_summary": {
-                    "total_return": "+15.2%",
-                    "best_performer": "NVDA (+45.2%)",
-                    "worst_performer": "TSLA (-8.2%)",
-                    "sharpe_ratio": 1.35,
-                    "max_drawdown": "-12.5%",
-                    "recommendation": "Consider reducing crypto allocation and increasing diversification"
-                }
-            }
+            "error": f"Unable to fetch portfolio data: {str(e)}",
+            "message": "Please ensure you have portfolios and assets in your account."
         }
     
     prompt_template = """You are an expert portfolio analyst and investment advisor. Based on the comprehensive portfolio data provided, analyze and provide insights on:

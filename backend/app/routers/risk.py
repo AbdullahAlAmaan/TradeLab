@@ -41,31 +41,10 @@ async def calculate_risk_metrics(
         print(f"Found {len(assets)} assets in portfolio {request.portfolio_id}")
         
         if not assets:
-            # Generate mock data for demonstration when portfolio is empty
-            print("Portfolio has no assets, generating mock data for risk analysis demonstration")
-            mock_assets = [
-                Asset(
-                    id=uuid.uuid4(),
-                    portfolio_id=request.portfolio_id,
-                    symbol="AAPL",
-                    asset_type="stock",
-                    name="Apple Inc.",
-                    exchange="NASDAQ",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
-                ),
-                Asset(
-                    id=uuid.uuid4(),
-                    portfolio_id=request.portfolio_id,
-                    symbol="MSFT",
-                    asset_type="stock", 
-                    name="Microsoft Corporation",
-                    exchange="NASDAQ",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
-                )
-            ]
-            portfolio_data = generate_mock_portfolio_data(mock_assets)
+            raise HTTPException(
+                status_code=400,
+                detail="Portfolio has no assets. Please add assets to your portfolio before running risk analysis."
+            )
         else:
             # Get price data for all assets
             portfolio_data = {}
@@ -93,9 +72,10 @@ async def calculate_risk_metrics(
                     print(f"Created returns series with {len(df['returns'])} data points for {asset.symbol}")
             
             if not portfolio_data:
-                print("No price data found, generating mock data for risk analysis")
-                # Generate mock data for demonstration
-                portfolio_data = generate_mock_portfolio_data(assets)
+                raise HTTPException(
+                    status_code=400,
+                    detail="No price data available for portfolio assets. Please ensure assets have recent price data."
+                )
         
         
         # Calculate portfolio returns (equal weight for now)
@@ -264,56 +244,6 @@ async def calculate_beta(portfolio_returns: pd.Series, db: Session) -> float:
         return 0.0
 
 
-def generate_mock_portfolio_data(assets: List[Asset]) -> Dict[str, pd.DataFrame]:
-    """Generate mock portfolio data for risk analysis when real data is not available."""
-    portfolio_data = {}
-    
-    # Different base prices for different assets
-    base_prices = {
-        "AAPL": 150.0,
-        "MSFT": 300.0,
-        "GOOGL": 2500.0,
-        "TSLA": 200.0,
-        "JPM": 120.0,
-        "JNJ": 160.0,
-        "BTC": 45000.0,
-        "ETH": 3000.0,
-        "BNB": 300.0
-    }
-    
-    for asset in assets:
-        # Generate 252 days of mock data (1 year of trading days)
-        dates = pd.date_range(start=datetime.utcnow() - timedelta(days=365), periods=252, freq='D')
-        
-        # Generate realistic price data with different volatilities for different asset types
-        base_price = base_prices.get(asset.symbol, 100.0)
-        
-        if asset.asset_type == "crypto":
-            # Higher volatility for crypto
-            daily_return_mean = 0.001  # 0.1% daily mean return
-            daily_return_std = 0.04    # 4% daily volatility
-        else:
-            # Lower volatility for stocks
-            daily_return_mean = 0.0005  # 0.05% daily mean return
-            daily_return_std = 0.02     # 2% daily volatility
-        
-        returns = np.random.normal(daily_return_mean, daily_return_std, 252)
-        prices = [base_price]
-        
-        for ret in returns[1:]:
-            prices.append(prices[-1] * (1 + ret))
-        
-        df = pd.DataFrame({
-            'date': dates,
-            'close': prices
-        })
-        df.set_index('date', inplace=True)
-        df['returns'] = df['close'].pct_change().dropna()
-        portfolio_data[asset.symbol] = df
-        
-        print(f"Generated mock data for {asset.symbol}: {len(df)} days, {len(df['returns'])} returns, base price: ${base_price:.2f}")
-    
-    return portfolio_data
 
 
 def run_monte_carlo_simulation(returns: pd.Series, num_simulations: int = 1000) -> Dict[str, Any]:

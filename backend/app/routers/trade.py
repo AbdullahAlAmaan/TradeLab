@@ -139,11 +139,11 @@ async def _get_current_price(symbol: str, asset_type: str) -> float:
             except Exception as e:
                 print(f"Failed to get real stock data for {symbol}: {e}")
             
-            # Fallback to mock price
-            import random
-            mock_price = round(random.uniform(50, 200), 2)
-            print(f"Using mock stock price for {symbol}: {mock_price}")
-            return mock_price
+            # No fallback - raise error if real data unavailable
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unable to fetch current price for {symbol}. Please check the symbol and try again."
+            )
             
         elif asset_type == "crypto":
             try:
@@ -161,11 +161,11 @@ async def _get_current_price(symbol: str, asset_type: str) -> float:
             except Exception as e:
                 print(f"Failed to get real crypto data for {symbol}: {e}")
             
-            # Fallback to mock price
-            import random
-            mock_price = round(random.uniform(0.1, 100), 4)
-            print(f"Using mock crypto price for {symbol}: {mock_price}")
-            return mock_price
+            # No fallback - raise error if real data unavailable
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unable to fetch current price for {symbol}. Please check the symbol and try again."
+            )
         else:
             raise ValueError(f"Unsupported asset type: {asset_type}")
     except Exception as e:
