@@ -2,10 +2,11 @@
 
 ## ✅ **Fixed Issues**
 
-### **1. Distutils Error Fix**
-- Updated `requirements.txt` with `setuptools>=65.0.0`
-- Specified Python 3.11 in `runtime.txt`
+### **1. Python 3.12 Compatibility Fix**
+- Updated `runtime.txt` to specify Python 3.12
+- Updated `requirements.txt` with `setuptools>=68.0.0` and `wheel>=0.40.0`
 - Updated Supabase to version 2.9.1 for compatibility
+- Created `requirements-vercel.txt` for simplified deployment
 
 ### **2. Vercel Configuration**
 - Created `backend/vercel.json` for proper deployment
