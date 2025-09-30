@@ -1,15 +1,22 @@
 """Main FastAPI application."""
 
+print("🚀 DEBUG: Starting backend/app/main.py execution")
+print("🚀 DEBUG: Importing FastAPI...")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+print("🚀 DEBUG: Importing app modules...")
 from app.config import settings
 from app.routers import health, auth, assets, data, backtest, risk, trade, chat, websocket
+
+print("🚀 DEBUG: All imports successful")
 
 # Create FastAPI application
 app = FastAPI(
     title="TradeLab API",
     description="A comprehensive trading platform with backtesting, risk analysis, and paper trading",
-    version="1.0.0",
+    version="1.0.2",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -40,7 +47,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Welcome to TradeLab API",
-        "version": "1.0.0",
+        "version": "1.0.2",
         "docs": "/docs",
         "status": "deployed_on_vercel"
     }
