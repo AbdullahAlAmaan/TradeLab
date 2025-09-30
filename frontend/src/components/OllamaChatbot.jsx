@@ -28,8 +28,8 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [ollamaSettings, setOllamaSettings] = useState({
-    host: 'http://localhost:11434',
-    model: 'wizardlm2:latest'
+    host: import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434',
+    model: import.meta.env.VITE_OLLAMA_MODEL || 'wizardlm2:latest'
   })
   const [connectionStatus, setConnectionStatus] = useState('unknown') // unknown, connected, disconnected
   const messagesEndRef = useRef(null)
@@ -94,7 +94,8 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         return { enhanced_prompt: userQuery, context_used: false }
       }
 
-      const response = await fetch('/api/v1/ai/smart-context', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/v1/ai/smart-context`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +136,8 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
         return null
       }
 
-      const response = await fetch('/api/v1/ai/context', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiUrl}/api/v1/ai/context`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
