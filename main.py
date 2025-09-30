@@ -46,7 +46,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Welcome to TradeLab API",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "docs": "/docs",
         "status": "deployed_on_railway"
     }
