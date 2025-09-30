@@ -60,20 +60,27 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
 
   const testOllamaConnection = async (settings = ollamaSettings) => {
     try {
+      console.log('Testing Ollama connection to:', settings.host)
       const response = await fetch(`${settings.host}/api/tags`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000) // 5 second timeout
       })
       
+      console.log('Ollama response status:', response.status)
+      
       if (response.ok) {
+        const data = await response.json()
+        console.log('Ollama models available:', data.models?.map(m => m.name))
         setConnectionStatus('connected')
         return true
       } else {
+        console.log('Ollama response not ok:', response.status, response.statusText)
         setConnectionStatus('disconnected')
         return false
       }
     } catch (error) {
       console.error('Ollama connection test failed:', error)
+      console.error('Error details:', error.message)
       setConnectionStatus('disconnected')
       return false
     }
@@ -164,7 +171,7 @@ const OllamaChatbot = ({ isOpen, onToggle }) => {
       const errorMessage = {
         id: Date.now(),
         type: 'system',
-        content: "⚠️ Ollama not detected. Please install and run Ollama to use the chatbot.\n\nTo get started:\n1. Install Ollama from https://ollama.ai\n2. Run 'ollama pull wizardlm2' to download WizardLM2\n3. Make sure Ollama is running on " + ollamaSettings.host,
+        content: "⚠️ Cannot connect to Ollama. This is likely a CORS issue.\n\n**Solutions:**\n1. **If using Vercel**: Ollama runs on your local machine, but Vercel can't access localhost\n2. **Try local development**: Run `npm run dev` locally to test the chatbot\n3. **Check Ollama**: Make sure Ollama is running with `ollama serve`\n4. **Check console**: Open browser dev tools to see detailed error messages\n\n**Current settings:** " + ollamaSettings.host,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
