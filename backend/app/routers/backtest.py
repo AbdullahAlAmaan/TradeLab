@@ -245,6 +245,14 @@ async def run_backtest(
         print(f"DEBUG - win_rate type: {type(win_rate)}, value: {win_rate}")
         print(f"DEBUG - total_trades type: {type(total_trades)}, value: {total_trades}")
         
+        # Force convert all values to ensure they're Python native types
+        sharpe_ratio = float(sharpe_ratio)
+        max_drawdown = float(max_drawdown)
+        win_rate = float(win_rate)
+        total_trades = int(total_trades)
+        final_value = float(final_value)
+        total_return = float(total_return)
+        
         # Create backtest result
         backtest_result = BacktestResultModel(
             id=uuid.uuid4(),
