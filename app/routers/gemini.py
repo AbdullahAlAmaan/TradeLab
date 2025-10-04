@@ -209,6 +209,95 @@ Please provide a helpful, accurate response based on the context data provided."
             detail=f"Error streaming Gemini response: {str(e)}"
         )
 
+@router.get("/gemini/test-rag")
+async def test_rag_system():
+    """Test the RAG system with real database data."""
+    try:
+        if not GEMINI_API_KEY:
+            raise HTTPException(
+                status_code=503,
+                detail="Gemini API key not configured"
+            )
+        
+        if not model:
+            raise HTTPException(
+                status_code=503,
+                detail="Gemini model not initialized"
+            )
+        
+        # Fetch real data from database
+        from app.database import get_db
+        from app.models import Portfolio, Asset
+        from sqlalchemy.orm import Session
+        
+        db = next(get_db())
+        
+        # Get a sample portfolio with assets
+        portfolio = db.query(Portfolio).first()
+        if not portfolio:
+            return {"error": "No portfolios found in database"}
+        
+        # Get assets for this portfolio
+        assets = db.query(Asset).filter(Asset.portfolio_id == portfolio.id).all()
+        
+        # Build context data
+        context_data = {
+            "portfolio": {
+                "id": str(portfolio.id),
+                "name": portfolio.name,
+                "user_id": str(portfolio.user_id),
+                "created_at": portfolio.created_at.isoformat(),
+                "assets": [
+                    {
+                        "id": str(asset.id),
+                        "symbol": asset.symbol,
+                        "name": asset.name,
+                        "asset_type": asset.asset_type,
+                        "quantity": float(asset.quantity) if asset.quantity else 1,
+                        "purchase_price": float(asset.purchase_price) if asset.purchase_price else 0,
+                        "exchange": asset.exchange
+                    }
+                    for asset in assets
+                ]
+            }
+        }
+        
+        # Test with Gemini
+        context_str = json.dumps(context_data, indent=2)
+        test_prompt = f"""You are a financial AI assistant. Analyze this real portfolio data from our database:
+
+{context_str}
+
+Please provide a brief analysis of this portfolio including:
+1. Portfolio composition
+2. Asset types and diversification
+3. Any potential risks or recommendations
+
+Keep the response concise but informative."""
+        
+        print(f"🚀 DEBUG: Testing RAG with real data - Portfolio: {portfolio.name}")
+        response = model.generate_content(test_prompt)
+        
+        if response and response.text:
+            return {
+                "status": "success",
+                "portfolio_analyzed": portfolio.name,
+                "assets_count": len(assets),
+                "gemini_response": response.text,
+                "context_data": context_data
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Gemini API returned empty response"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error testing RAG system: {str(e)}"
+        )
+
 @router.get("/gemini/models")
 async def get_available_models():
     """Get list of available Gemini models."""
