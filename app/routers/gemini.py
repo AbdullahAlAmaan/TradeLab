@@ -18,7 +18,7 @@ router = APIRouter()
 
 # Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # Fast and free model
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-001")  # Fast and free model
 
 # Initialize Gemini
 if GEMINI_API_KEY:
@@ -234,14 +234,14 @@ async def get_available_models():
         # Return available models (Gemini API doesn't have a models endpoint like OpenAI)
         available_models = [
             {
-                "id": "gemini-1.5-flash",
+                "id": "gemini-1.5-flash-001",
                 "name": "Gemini 1.5 Flash",
                 "description": "Fast and efficient model for most tasks",
                 "context_length": 1048576,
                 "free": True
             },
             {
-                "id": "gemini-1.5-pro",
+                "id": "gemini-1.5-pro-001",
                 "name": "Gemini 1.5 Pro", 
                 "description": "Most capable model for complex tasks",
                 "context_length": 2097152,
