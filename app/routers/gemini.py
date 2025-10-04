@@ -130,7 +130,7 @@ Please provide a helpful, accurate response based on the context data provided. 
                     response=response.text,
                     model=GEMINI_MODEL,
                     timestamp=datetime.utcnow().isoformat(),
-                    tokens_used=getattr(response, 'usage_metadata', {}).get('total_token_count')
+                    tokens_used=None  # Gemini doesn't always provide usage metadata
                 )
             else:
                 raise HTTPException(
@@ -145,7 +145,7 @@ Please provide a helpful, accurate response based on the context data provided. 
                     response=response.text,
                     model=GEMINI_MODEL,
                     timestamp=datetime.utcnow().isoformat(),
-                    tokens_used=getattr(response, 'usage_metadata', {}).get('total_token_count')
+                    tokens_used=None  # Gemini doesn't always provide usage metadata
                 )
             else:
                 raise HTTPException(
