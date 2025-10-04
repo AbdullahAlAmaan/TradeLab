@@ -103,6 +103,12 @@ try:
 except Exception as e:
     print(f"❌ DEBUG: llm_proxy router import failed: {e}")
 
+try:
+    from app.routers import gemini
+    print("✅ DEBUG: gemini router imported")
+except Exception as e:
+    print(f"❌ DEBUG: gemini router import failed: {e}")
+
 print("🚀 DEBUG: All router imports attempted")
 
 print("🚀 DEBUG: All imports successful")
@@ -196,6 +202,12 @@ try:
     print("✅ DEBUG: llm_proxy router included")
 except Exception as e:
     print(f"❌ DEBUG: llm_proxy router inclusion failed: {e}")
+
+try:
+    app.include_router(gemini.router, prefix="/api/v1", tags=["gemini-ai"])
+    print("✅ DEBUG: gemini router included")
+except Exception as e:
+    print(f"❌ DEBUG: gemini router inclusion failed: {e}")
 
 
 @app.get("/")

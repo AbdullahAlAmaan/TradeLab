@@ -2,7 +2,7 @@ import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
-import OllamaChatbot from './OllamaChatbot'
+import GeminiChatbot from './GeminiChatbot'
 import { 
   Home, 
   BarChart3, 
@@ -196,8 +196,8 @@ const Layout = ({ children }) => {
         </main>
       </div>
 
-      {/* Ollama Local AI Chatbot */}
-      <OllamaChatbot 
+      {/* Gemini AI Chatbot */}
+      <GeminiChatbot 
         isOpen={chatOpen} 
         onToggle={() => setChatOpen(!chatOpen)}
       />

@@ -1,5 +1,5 @@
 # Routers package
-from . import health, auth, assets, data, backtest, risk, trade, chat, websocket, llm_proxy
+from . import health, auth, assets, data, backtest, risk, trade, chat, websocket, llm_proxy, gemini
 
 __all__ = [
     "health",
@@ -11,5 +11,6 @@ __all__ = [
     "trade",
     "chat",
     "websocket",
-    "llm_proxy"
+    "llm_proxy",
+    "gemini"
 ]
