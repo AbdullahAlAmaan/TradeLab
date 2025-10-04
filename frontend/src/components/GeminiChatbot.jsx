@@ -43,6 +43,7 @@ const GeminiChatbot = ({ isOpen, onToggle }) => {
       setConnectionStatus('testing')
       
       const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://tradelab-production.up.railway.app'
+      console.log('🔍 GeminiChatbot API_BASE_URL:', API_BASE_URL)
       const response = await fetch(`${API_BASE_URL}/api/v1/gemini/health`)
       const data = await response.json()
       
@@ -82,6 +83,7 @@ const GeminiChatbot = ({ isOpen, onToggle }) => {
     try {
       // Fetch portfolio data for context
       const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://tradelab-production.up.railway.app'
+      console.log('🔍 GeminiChatbot Portfolio API_BASE_URL:', API_BASE_URL)
       const portfolioResponse = await fetch(`${API_BASE_URL}/api/v1/assets/portfolios`)
       if (portfolioResponse.ok) {
         const portfolios = await portfolioResponse.json()
@@ -113,6 +115,7 @@ const GeminiChatbot = ({ isOpen, onToggle }) => {
         const context = await fetchSmartContext()
         
         const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://tradelab-production.up.railway.app'
+        console.log('🔍 GeminiChatbot Generate API_BASE_URL:', API_BASE_URL)
         const response = await fetch(`${API_BASE_URL}/api/v1/gemini/generate`, {
           method: 'POST',
           headers: {
