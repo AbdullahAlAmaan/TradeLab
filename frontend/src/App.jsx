@@ -16,6 +16,7 @@ import Risk from './pages/Risk'
 import Trading from './pages/Trading'
 import Settings from './pages/Settings'
 import MarketData from './pages/MarketData'
+import ChartDemo from './pages/ChartDemo'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -138,6 +139,16 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Settings />
+                    </Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/chart-demo" 
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ChartDemo />
                     </Layout>
                   </ProtectedRoute>
                 } 

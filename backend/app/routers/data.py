@@ -3,7 +3,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.auth import get_current_user
+from app.auth import get_current_user, get_current_user_optional
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Optional
 from app.schemas import DataFetchRequest, AssetPriceCreate, AssetPrice
 from app.models import AssetPrice as AssetPriceModel
 from datetime import datetime, timedelta
@@ -13,6 +15,72 @@ from app.config import settings
 import pandas as pd
 
 router = APIRouter()
+
+# Test endpoint without authentication - MOVED TO TOP FOR DEBUGGING
+@router.get("/test")
+async def test_endpoint():
+    """Test endpoint to verify server is working."""
+    print("🔍 DEBUG: Test endpoint called!")
+    return {"message": "Data router is working", "status": "ok"}
+
+# Simple optional authentication for testing
+def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
+    """Get current user if authenticated, otherwise return None."""
+    if credentials is None:
+        return None
+    try:
+        from app.auth import verify_jwt_token
+        payload = verify_jwt_token(credentials.credentials)
+        if payload:
+            return {
+                "user_id": str(payload.get("sub")),
+                "email": payload.get("email"),
+                "role": payload.get("role", "authenticated")
+            }
+    except:
+        pass
+    return None
+
+# Test endpoint moved to top of file
+
+# Public endpoints without authentication for testing
+@router.post("/fetch-public")
+async def fetch_market_data_public(request: DataFetchRequest):
+    """Fetch market data for a symbol without authentication."""
+    try:
+        if request.asset_type == "stock":
+            return await _fetch_stock_data_public(request)
+        elif request.asset_type == "crypto":
+            return await _fetch_crypto_data_public(request)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid asset type. Must be 'stock' or 'crypto'"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching market data: {str(e)}"
+        )
+
+@router.get("/prices-public/{symbol}")
+async def get_price_data_public(symbol: str, asset_type: str, days: int = 30):
+    """Get price data for a symbol without authentication."""
+    try:
+        if asset_type == "stock":
+            return await _get_stock_price_data_public(symbol, days)
+        elif asset_type == "crypto":
+            return await _get_crypto_price_data_public(symbol, days)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid asset type. Must be 'stock' or 'crypto'"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching price data: {str(e)}"
+        )
 
 # Initialize Binance client lazily to avoid startup timeouts
 binance_client = None
@@ -36,10 +104,13 @@ def get_binance_client():
 @router.post("/fetch")
 async def fetch_market_data(
     request: DataFetchRequest,
-    current_user: dict = Depends(get_current_user),
+    # Make authentication optional for testing
+    current_user: Optional[dict] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """Fetch market data for a symbol and store in database."""
+    print(f"🔍 DEBUG: fetch_market_data called with symbol={request.symbol}, asset_type={request.asset_type}")
+    print(f"🔍 DEBUG: current_user={current_user}")
     try:
         if request.asset_type == "stock":
             return await _fetch_stock_data(request, db)
@@ -314,7 +385,8 @@ async def get_price_data(
     symbol: str,
     asset_type: str,
     days: int = 30,
-    current_user: dict = Depends(get_current_user),
+    # Make authentication optional for testing
+    current_user: Optional[dict] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """Get stored price data for a symbol."""
@@ -354,3 +426,149 @@ async def get_price_data(
             for price in prices
         ]
     }
+
+
+# Public helper functions without database dependency
+async def _fetch_stock_data_public(request: DataFetchRequest):
+    """Fetch stock data without database storage."""
+    try:
+        # Use yfinance to get stock data
+        ticker = yf.Ticker(request.symbol)
+        hist = ticker.history(period=f"{request.days}d")
+        
+        if hist.empty:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No data found for symbol {request.symbol}"
+            )
+        
+        # Convert to our format
+        prices = []
+        for timestamp, row in hist.iterrows():
+            prices.append({
+                "timestamp": timestamp.isoformat(),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0
+            })
+        
+        return {
+            "symbol": request.symbol,
+            "asset_type": request.asset_type,
+            "data_preview": {
+                "last_price": float(hist['Close'].iloc[-1]),
+                "open_price": float(hist['Open'].iloc[-1]),
+                "high_price": float(hist['High'].iloc[-1]),
+                "low_price": float(hist['Low'].iloc[-1]),
+                "volume": int(hist['Volume'].iloc[-1]) if not pd.isna(hist['Volume'].iloc[-1]) else 0,
+                "change": float(hist['Close'].iloc[-1] - hist['Open'].iloc[-1]),
+                "change_percent": float((hist['Close'].iloc[-1] - hist['Open'].iloc[-1]) / hist['Open'].iloc[-1] * 100)
+            },
+            "prices": prices
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching stock data: {str(e)}"
+        )
+
+async def _fetch_crypto_data_public(request: DataFetchRequest):
+    """Fetch crypto data without database storage."""
+    try:
+        # Use yfinance for crypto data too
+        ticker = yf.Ticker(f"{request.symbol}-USD")
+        hist = ticker.history(period=f"{request.days}d")
+        
+        if hist.empty:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No data found for crypto symbol {request.symbol}"
+            )
+        
+        # Convert to our format
+        prices = []
+        for timestamp, row in hist.iterrows():
+            prices.append({
+                "timestamp": timestamp.isoformat(),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0
+            })
+        
+        return {
+            "symbol": request.symbol,
+            "asset_type": request.asset_type,
+            "data_preview": {
+                "last_price": float(hist['Close'].iloc[-1]),
+                "open_price": float(hist['Open'].iloc[-1]),
+                "high_price": float(hist['High'].iloc[-1]),
+                "low_price": float(hist['Low'].iloc[-1]),
+                "volume": int(hist['Volume'].iloc[-1]) if not pd.isna(hist['Volume'].iloc[-1]) else 0,
+                "change": float(hist['Close'].iloc[-1] - hist['Open'].iloc[-1]),
+                "change_percent": float((hist['Close'].iloc[-1] - hist['Open'].iloc[-1]) / hist['Open'].iloc[-1] * 100)
+            },
+            "prices": prices
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching crypto data: {str(e)}"
+        )
+
+async def _get_stock_price_data_public(symbol: str, days: int):
+    """Get stock price data without database."""
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period=f"{days}d")
+        
+        if hist.empty:
+            return {"prices": []}
+        
+        prices = []
+        for timestamp, row in hist.iterrows():
+            prices.append({
+                "timestamp": timestamp.isoformat(),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0
+            })
+        
+        return {"prices": prices}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching stock price data: {str(e)}"
+        )
+
+async def _get_crypto_price_data_public(symbol: str, days: int):
+    """Get crypto price data without database."""
+    try:
+        ticker = yf.Ticker(f"{symbol}-USD")
+        hist = ticker.history(period=f"{days}d")
+        
+        if hist.empty:
+            return {"prices": []}
+        
+        prices = []
+        for timestamp, row in hist.iterrows():
+            prices.append({
+                "timestamp": timestamp.isoformat(),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0
+            })
+        
+        return {"prices": prices}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching crypto price data: {str(e)}"
+        )

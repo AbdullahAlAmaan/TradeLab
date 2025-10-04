@@ -16,16 +16,15 @@ A comprehensive trading platform with backtesting, risk analysis, and paper trad
 - **Frontend**: React + Vite + Tailwind CSS + Recharts
 - **Backend**: FastAPI + SQLAlchemy + Backtrader
 - **Database**: Supabase PostgreSQL
-- **Deployment**: Vercel (frontend) + Render (backend)
+- **Deployment**: Vercel (frontend) + Railway (backend)
 
 ## 📁 Project Structure
 
 ```
 TradeLab/
-├── frontend/          # React application
-├── backend/           # FastAPI application
-├── database/          # Supabase migrations and schemas
-├── docs/             # Documentation
+├── frontend/          # React application (Vercel)
+├── app/              # FastAPI application (Railway)
+├── database/         # Supabase migrations and schemas
 └── README.md
 ```
 

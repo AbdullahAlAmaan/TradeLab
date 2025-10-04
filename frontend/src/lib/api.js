@@ -15,6 +15,21 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('supabase.auth.token')
   console.log('API Request - Token available:', !!token)
   if (token) {
+    // Check if token is expired before sending
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const now = Math.floor(Date.now() / 1000)
+      if (payload.exp < now) {
+        console.log('API Request - Token expired, removing from localStorage')
+        localStorage.removeItem('supabase.auth.token')
+        return config
+      }
+    } catch (error) {
+      console.error('API Request - Error checking token:', error)
+      localStorage.removeItem('supabase.auth.token')
+      return config
+    }
+    
     config.headers.Authorization = `Bearer ${token}`
     console.log('API Request - Authorization header set')
   } else {
@@ -22,6 +37,20 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+// Handle auth errors in responses
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.log('API Response - 401 Unauthorized, clearing token')
+      localStorage.removeItem('supabase.auth.token')
+      // Optionally redirect to login page
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
 
 // API endpoints
 export const authAPI = {

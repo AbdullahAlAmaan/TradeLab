@@ -3,15 +3,10 @@ import {
   MessageCircle, 
   Send, 
   Minimize2, 
-  Maximize2, 
   User, 
   Bot,
   Lightbulb,
-  TrendingUp,
-  BarChart3,
-  Brain,
-  Code,
-  Database
+  BarChart3
 } from 'lucide-react'
 import axios from 'axios'
 
@@ -31,7 +26,7 @@ const AIChat = ({ isOpen, onToggle, portfolioId = null, backtestId = null }) => 
   ])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [chatMode, setChatMode] = useState('general') // general, explainer, backtest_analyzer, portfolio_analyst, strategy_generator, sql_converter
+  const [chatMode, setChatMode] = useState('general') // general, explainer, portfolio_analyst
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -131,10 +126,7 @@ const AIChat = ({ isOpen, onToggle, portfolioId = null, backtestId = null }) => 
   const modeIcons = {
     general: MessageCircle,
     explainer: Lightbulb,
-    backtest_analyzer: TrendingUp,
-    portfolio_analyst: BarChart3,
-    strategy_generator: Brain,
-    sql_converter: Database
+    portfolio_analyst: BarChart3
   }
 
   const ModeIcon = modeIcons[chatMode]
@@ -177,8 +169,7 @@ const AIChat = ({ isOpen, onToggle, portfolioId = null, backtestId = null }) => 
           {[
             { id: 'general', icon: MessageCircle, label: 'Chat' },
             { id: 'explainer', icon: Lightbulb, label: 'Explain' },
-            { id: 'portfolio_analyst', icon: BarChart3, label: 'Portfolio' },
-            { id: 'strategy_generator', icon: Brain, label: 'Strategy' }
+            { id: 'portfolio_analyst', icon: BarChart3, label: 'Portfolio' }
           ].map(mode => {
             const Icon = mode.icon
             return (

@@ -15,7 +15,6 @@ import uuid
 
 router = APIRouter()
 
-
 @router.post("/calculate", response_model=RiskMetrics)
 async def calculate_risk_metrics(
     request: RiskMetricsRequest,

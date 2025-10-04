@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     # Supabase Configuration
-    supabase_url: str = "http://localhost:54321"  # Default for local development
+    supabase_url: str = "https://your-project.supabase.co"  # Default for production
     supabase_anon_key: str = "your_anon_key_here"
     supabase_service_role_key: str = "your_service_role_key_here"
     supabase_jwt_secret: Optional[str] = None  # Required for JWT verification

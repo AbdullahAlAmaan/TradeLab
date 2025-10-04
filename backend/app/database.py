@@ -28,8 +28,16 @@ def construct_database_url() -> str:
         logger.info("Using explicit database URL from configuration")
         return settings.database_url
     
+    # Check for DATABASE_URL environment variable first
+    import os
+    env_database_url = os.getenv("DATABASE_URL")
+    if env_database_url:
+        logger.info("Using DATABASE_URL from environment variables")
+        return env_database_url
+    
     try:
-        if settings.supabase_url and "supabase.co" in settings.supabase_url:
+        # Check if we have Railway/Supabase environment variables
+        if settings.supabase_url and "supabase.co" in settings.supabase_url and settings.supabase_db_password:
             # Extract project reference from URL like https://xyz.supabase.co
             url_parts = settings.supabase_url.replace("https://", "").replace("http://", "")
             project_ref = url_parts.split('.')[0]

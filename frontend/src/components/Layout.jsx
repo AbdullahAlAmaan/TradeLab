@@ -28,6 +28,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Portfolios', href: '/portfolios', icon: BarChart3 },
     { name: 'Market Data', href: '/market-data', icon: Globe },
+    { name: 'Chart Demo', href: '/chart-demo', icon: BarChart3 },
     { name: 'Backtest', href: '/backtest', icon: TrendingUp },
     { name: 'Risk Analysis', href: '/risk', icon: Shield },
     { name: 'Paper Trading', href: '/trading', icon: Wallet },

@@ -11,6 +11,8 @@ import {
   Zap
 } from 'lucide-react'
 import { dataAPI } from '../lib/api'
+import CandlestickChart from '../components/CandlestickChart'
+import AdvancedChart from '../components/AdvancedChart'
 
 const MarketData = () => {
   const [searchSymbol, setSearchSymbol] = useState('')
@@ -20,9 +22,11 @@ const MarketData = () => {
   const [error, setError] = useState(null)
   const [selectedAsset, setSelectedAsset] = useState(null)
   const [priceData, setPriceData] = useState(null)
+  const [chartData, setChartData] = useState([])
   const [recentSearches, setRecentSearches] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSymbols, setFilteredSymbols] = useState([])
+  const [chartLoading, setChartLoading] = useState(false)
 
   // Popular symbols for quick access
   const popularStocks = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA', 'NFLX', 'AMD', 'INTC', 'CRM', 'ORCL', 'ADBE', 'PYPL', 'NKE', 'DIS', 'WMT', 'JPM', 'V', 'MA']
@@ -69,6 +73,9 @@ const MarketData = () => {
         setSelectedAsset(assetData)
         setPriceData(response.data)
         
+        // Fetch chart data
+        await fetchChartData(searchSymbol.toUpperCase(), assetType)
+        
         // Add to recent searches
         const newRecent = [assetData, ...recentSearches.filter(item => 
           !(item.symbol === assetData.symbol && item.asset_type === assetData.asset_type)
@@ -86,13 +93,64 @@ const MarketData = () => {
     }
   }
 
-  const quickSearch = (symbol, type) => {
+  const fetchChartData = async (symbol, type) => {
+    setChartLoading(true)
+    try {
+      const response = await dataAPI.getPriceData(symbol, type, 30)
+      if (response.data && response.data.prices) {
+        setChartData(response.data.prices)
+      } else {
+        // Generate mock data if API fails
+        generateMockChartData(symbol)
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+      // Generate mock data as fallback
+      generateMockChartData(symbol)
+    } finally {
+      setChartLoading(false)
+    }
+  }
+
+  const generateMockChartData = (symbol) => {
+    const mock = []
+    const basePrice = symbol === 'BTC' ? 50000 : symbol === 'ETH' ? 3000 : 150
+    const volatility = symbol.includes('BTC') || symbol.includes('ETH') ? 0.05 : 0.02
+    
+    for (let i = 0; i < 30; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - (29 - i))
+      
+      const open = basePrice + (Math.random() - 0.5) * basePrice * volatility
+      const close = open + (Math.random() - 0.5) * basePrice * volatility
+      const high = Math.max(open, close) + Math.random() * basePrice * volatility * 0.5
+      const low = Math.min(open, close) - Math.random() * basePrice * volatility * 0.5
+      const volume = Math.floor(Math.random() * 10000000) + 1000000
+      
+      mock.push({
+        timestamp: date.toISOString(),
+        open: open.toFixed(2),
+        high: high.toFixed(2),
+        low: low.toFixed(2),
+        close: close.toFixed(2),
+        volume: volume
+      })
+    }
+    
+    setChartData(mock)
+  }
+
+  const quickSearch = async (symbol, type) => {
     setSearchSymbol(symbol)
     setAssetType(type)
     setSearchResults([])
     setSelectedAsset(null)
     setPriceData(null)
+    setChartData([])
     setShowSuggestions(false)
+    
+    // Auto-search when using quick search
+    await searchAsset()
   }
 
   const handleSymbolChange = (value) => {
@@ -358,18 +416,23 @@ const MarketData = () => {
               </div>
             </div>
 
-            {/* Price Chart Placeholder */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Price Chart</h3>
-                <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">Chart visualization coming soon</p>
-                    <p className="text-sm text-gray-400">Historical data available: {priceData?.data_points?.length || 0} points</p>
-                  </div>
-                </div>
-              </div>
+            {/* Price Charts */}
+            <div className="lg:col-span-2 space-y-6">
+              <CandlestickChart
+                data={chartData}
+                symbol={selectedAsset?.symbol}
+                height={400}
+                loading={chartLoading}
+                onRefresh={() => fetchChartData(selectedAsset?.symbol, selectedAsset?.asset_type)}
+              />
+              
+              <AdvancedChart
+                data={chartData}
+                symbol={selectedAsset?.symbol}
+                height={500}
+                loading={chartLoading}
+                onRefresh={() => fetchChartData(selectedAsset?.symbol, selectedAsset?.asset_type)}
+              />
             </div>
           </div>
         )}

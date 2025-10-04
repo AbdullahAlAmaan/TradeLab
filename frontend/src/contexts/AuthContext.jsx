@@ -38,24 +38,43 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: Auth state changed:', event, session ? 'Session found' : 'No session')
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // Store token in localStorage for API calls
-      if (session?.access_token) {
+      // Handle token refresh
+      if (event === 'TOKEN_REFRESHED' && session?.access_token) {
+        localStorage.setItem('supabase.auth.token', session.access_token)
+        console.log('AuthContext: Token refreshed and stored')
+      } else if (event === 'SIGNED_OUT' || !session) {
+        localStorage.removeItem('supabase.auth.token')
+        console.log('AuthContext: User signed out, token removed')
+      } else if (session?.access_token) {
         localStorage.setItem('supabase.auth.token', session.access_token)
         console.log('AuthContext: Token updated in localStorage')
-      } else {
-        localStorage.removeItem('supabase.auth.token')
-        console.log('AuthContext: Token removed from localStorage')
       }
     })
 
+    // Set up automatic token refresh
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+          console.error('AuthContext: Error refreshing session:', error)
+        } else if (session?.access_token) {
+          localStorage.setItem('supabase.auth.token', session.access_token)
+          console.log('AuthContext: Token refreshed automatically')
+        }
+      } catch (error) {
+        console.error('AuthContext: Error in refresh interval:', error)
+      }
+    }, 5 * 60 * 1000) // Refresh every 5 minutes
+
     return () => {
-      console.log('AuthContext: Cleaning up subscription')
+      console.log('AuthContext: Cleaning up subscription and interval')
       subscription.unsubscribe()
+      clearInterval(refreshInterval)
     }
   }, [])
 
@@ -88,8 +107,31 @@ export const AuthProvider = ({ children }) => {
     console.log('AuthContext: Signing out user')
     const { error } = await supabase.auth.signOut()
     localStorage.removeItem('supabase.auth.token')
+    setUser(null)
     console.log('AuthContext: User signed out, token removed')
     return { error }
+  }
+
+  const checkTokenExpiration = () => {
+    const token = localStorage.getItem('supabase.auth.token')
+    if (!token) return false
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const now = Math.floor(Date.now() / 1000)
+      const isExpired = payload.exp < now
+      
+      if (isExpired) {
+        console.log('AuthContext: Token expired, signing out user')
+        signOut()
+        return false
+      }
+      return true
+    } catch (error) {
+      console.error('AuthContext: Error checking token expiration:', error)
+      signOut()
+      return false
+    }
   }
 
   const value = {
@@ -98,6 +140,7 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
+    checkTokenExpiration,
   }
 
   return (

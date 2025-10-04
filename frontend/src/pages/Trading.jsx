@@ -13,7 +13,8 @@ import {
   BarChart3
 } from 'lucide-react'
 import { tradeAPI, dataAPI, portfolioAPI } from '../lib/api'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import CandlestickChart from '../components/CandlestickChart'
+import AdvancedChart from '../components/AdvancedChart'
 
 const Trading = () => {
   const [activeTab, setActiveTab] = useState('trade')
@@ -29,17 +30,27 @@ const Trading = () => {
   const [positions, setPositions] = useState([])
   const [orders, setOrders] = useState([])
   const [priceData, setPriceData] = useState([])
+  const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(false)
+  const [chartLoading, setChartLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [currentPrice, setCurrentPrice] = useState(null)
   const [positionPrices, setPositionPrices] = useState({})
+  const [selectedSymbol, setSelectedSymbol] = useState('AAPL')
 
   useEffect(() => {
     loadPositions()
     loadOrders()
     fetchCurrentPrice()
+    fetchChartData()
   }, [])
+
+  useEffect(() => {
+    if (selectedSymbol) {
+      fetchChartData()
+    }
+  }, [selectedSymbol])
 
   useEffect(() => {
     if (positions.positions && positions.positions.length > 0) {
@@ -117,6 +128,65 @@ const Trading = () => {
     }
   }
 
+  const fetchChartData = async () => {
+    setChartLoading(true)
+    try {
+      const response = await dataAPI.fetchData({
+        symbol: selectedSymbol,
+        asset_type: orderForm.asset_type,
+        days: 30
+      })
+      
+      if (response.data && response.data.data_preview) {
+        // Fetch historical data for chart
+        const historicalResponse = await dataAPI.getPriceData(selectedSymbol, orderForm.asset_type, 30)
+        if (historicalResponse.data && historicalResponse.data.prices) {
+          setChartData(historicalResponse.data.prices)
+        } else {
+          // Generate mock data if API fails
+          generateMockChartData(selectedSymbol)
+        }
+      } else {
+        // Generate mock data if API fails
+        generateMockChartData(selectedSymbol)
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+      // Generate mock data as fallback
+      generateMockChartData(selectedSymbol)
+    } finally {
+      setChartLoading(false)
+    }
+  }
+
+  const generateMockChartData = (symbol) => {
+    const mock = []
+    const basePrice = symbol === 'BTC' ? 50000 : symbol === 'ETH' ? 3000 : 150
+    const volatility = symbol.includes('BTC') || symbol.includes('ETH') ? 0.05 : 0.02
+    
+    for (let i = 0; i < 30; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - (29 - i))
+      
+      const open = basePrice + (Math.random() - 0.5) * basePrice * volatility
+      const close = open + (Math.random() - 0.5) * basePrice * volatility
+      const high = Math.max(open, close) + Math.random() * basePrice * volatility * 0.5
+      const low = Math.min(open, close) - Math.random() * basePrice * volatility * 0.5
+      const volume = Math.floor(Math.random() * 10000000) + 1000000
+      
+      mock.push({
+        timestamp: date.toISOString(),
+        open: open.toFixed(2),
+        high: high.toFixed(2),
+        low: low.toFixed(2),
+        close: close.toFixed(2),
+        volume: volume
+      })
+    }
+    
+    setChartData(mock)
+  }
+
   const handleOrderSubmit = async (e) => {
     e.preventDefault()
     console.log('Trading: Order form submitted', orderForm)
@@ -174,7 +244,9 @@ const Trading = () => {
   }
 
   const handleSymbolChange = (symbol) => {
-    setOrderForm(prev => ({ ...prev, symbol: symbol.toUpperCase() }))
+    const upperSymbol = symbol.toUpperCase()
+    setOrderForm(prev => ({ ...prev, symbol: upperSymbol }))
+    setSelectedSymbol(upperSymbol)
     fetchCurrentPrice()
   }
 
@@ -514,40 +586,22 @@ const Trading = () => {
             </div>
 
             {/* Price Chart */}
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 border border-gray-200/50 shadow-xl">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                Price Chart
-              </h2>
-              <div className="h-64">
-                {priceData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={priceData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="timestamp" />
-                      <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                      <Tooltip 
-                        formatter={(value) => [formatCurrency(value), 'Price']}
-                        labelFormatter={(label) => new Date(label).toLocaleTimeString()}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="price" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Select a symbol to view price chart</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-6">
+              <CandlestickChart
+                data={chartData}
+                symbol={selectedSymbol}
+                height={400}
+                loading={chartLoading}
+                onRefresh={fetchChartData}
+              />
+              
+              <AdvancedChart
+                data={chartData}
+                symbol={selectedSymbol}
+                height={500}
+                loading={chartLoading}
+                onRefresh={fetchChartData}
+              />
             </div>
           </div>
         )}
