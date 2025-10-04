@@ -122,36 +122,22 @@ User Question: {request.prompt}
 Please provide a helpful, accurate response based on the context data provided. If the context doesn't contain relevant information, provide general financial advice."""
         
         # Generate response
-        if request.stream:
-            # For streaming, we'll simulate it by generating and chunking
-            response = model.generate_content(full_prompt)
-            if response and response.text:
-                return GeminiResponse(
-                    response=response.text,
-                    model=GEMINI_MODEL,
-                    timestamp=datetime.utcnow().isoformat(),
-                    tokens_used=None  # Gemini doesn't always provide usage metadata
-                )
-            else:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Gemini API returned empty response"
-                )
+        print(f"🚀 DEBUG: Generating response with prompt: {full_prompt[:100]}...")
+        response = model.generate_content(full_prompt)
+        print(f"🚀 DEBUG: Response object: {response}")
+        
+        if response and response.text:
+            return GeminiResponse(
+                response=response.text,
+                model=GEMINI_MODEL,
+                timestamp=datetime.utcnow().isoformat(),
+                tokens_used=None  # Gemini doesn't always provide usage metadata
+            )
         else:
-            # Non-streaming response
-            response = model.generate_content(full_prompt)
-            if response and response.text:
-                return GeminiResponse(
-                    response=response.text,
-                    model=GEMINI_MODEL,
-                    timestamp=datetime.utcnow().isoformat(),
-                    tokens_used=None  # Gemini doesn't always provide usage metadata
-                )
-            else:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Gemini API returned empty response"
-                )
+            raise HTTPException(
+                status_code=500,
+                detail="Gemini API returned empty response"
+            )
                 
     except Exception as e:
         raise HTTPException(
