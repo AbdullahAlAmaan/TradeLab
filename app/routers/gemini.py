@@ -253,8 +253,8 @@ async def test_rag_system():
                         "symbol": asset.symbol,
                         "name": asset.name,
                         "asset_type": asset.asset_type,
-                        "quantity": float(asset.quantity) if asset.quantity else 1,
-                        "purchase_price": float(asset.purchase_price) if asset.purchase_price else 0,
+                        "quantity": float(getattr(asset, 'quantity', 1)) if hasattr(asset, 'quantity') and asset.quantity else 1,
+                        "purchase_price": float(getattr(asset, 'purchase_price', 0)) if hasattr(asset, 'purchase_price') and asset.purchase_price else 0,
                         "exchange": asset.exchange
                     }
                     for asset in assets
