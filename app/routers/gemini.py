@@ -18,7 +18,7 @@ router = APIRouter()
 
 # Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-001")  # Fast and free model
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")  # Fast and free model
 
 # Initialize Gemini
 if GEMINI_API_KEY:
@@ -65,7 +65,9 @@ async def gemini_health_check():
             )
         
         # Test with a simple request
+        print(f"🚀 DEBUG: Testing Gemini with model: {GEMINI_MODEL}")
         test_response = model.generate_content("Hello")
+        print(f"🚀 DEBUG: Gemini response: {test_response}")
         if test_response and test_response.text:
             return GeminiHealthResponse(
                 status="healthy",
@@ -234,18 +236,25 @@ async def get_available_models():
         # Return available models (Gemini API doesn't have a models endpoint like OpenAI)
         available_models = [
             {
-                "id": "gemini-1.5-flash-001",
-                "name": "Gemini 1.5 Flash",
+                "id": "gemini-2.0-flash",
+                "name": "Gemini 2.0 Flash",
                 "description": "Fast and efficient model for most tasks",
                 "context_length": 1048576,
                 "free": True
             },
             {
-                "id": "gemini-1.5-pro-001",
-                "name": "Gemini 1.5 Pro", 
+                "id": "gemini-2.5-flash",
+                "name": "Gemini 2.5 Flash", 
+                "description": "Latest and most capable model",
+                "context_length": 2097152,
+                "free": True
+            },
+            {
+                "id": "gemini-2.5-pro",
+                "name": "Gemini 2.5 Pro", 
                 "description": "Most capable model for complex tasks",
                 "context_length": 2097152,
-                "free": False
+                "free": True
             }
         ]
         
